@@ -23,9 +23,11 @@ x86/
 [Aa][Rr][Mm]/
 [Aa][Rr][Mm]64/
 bld/
-[Bb]in/
+Vulkan_Engine/[Bb]in/
 [Oo]bj/
 [Ll]og/
+Vulkan_Engine/Libraries/
+Vulkan_Engine/Intermediates/
 
 # Visual Studio 2015/2017 cache/options directory
 .vs/
