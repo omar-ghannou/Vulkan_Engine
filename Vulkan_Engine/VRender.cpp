@@ -2,6 +2,7 @@
 
 VRender::VRender()
 {
+
 	//ShowWindow(GetConsoleWindow(), SW_HIDE);
 	VulkanLoadingStatus[VALIDATION_LAYERS] = ValidationState();
 	VulkanLoadingStatus[VULKAN_LOADING] = Initiliazer();
@@ -9,8 +10,6 @@ VRender::VRender()
 	CreateInstance(); 
 	SetupDebugMessenger();
 	PickPhysicalDevice();
-
-
 }
 
 VRender::~VRender()
@@ -84,13 +83,9 @@ void VRender::SetupDebugMessenger()
 	VK_Messenger_CreateInfo.pfnUserCallback = DebugCallback;
 	VK_Messenger_CreateInfo.pUserData = nullptr;
 
-	try {
-		if (CreateDebugUtilsMessengerEXT(VK_Instance, &VK_Messenger_CreateInfo, nullptr, &debugMessenger) != VK_SUCCESS) {
-			throw std::runtime_error("Failed to set up debug messenger");
-		}
-	}
-	catch (std::exception& e) {
-		std::cout << e.what();
+
+	if (CreateDebugUtilsMessengerEXT(VK_Instance, &VK_Messenger_CreateInfo, nullptr, &debugMessenger) != VK_SUCCESS) {
+		throw std::runtime_error("ERROR :: Failed to set up debug messenger");
 	}
 
 
@@ -128,6 +123,96 @@ std::vector<const char*> VRender::GLFWGetRequiredExtension()
 
 void VRender::PickPhysicalDevice()
 {
+	PhysicalDevice = VK_NULL_HANDLE;
+	uint32_t devices_count = 0;
+	vkEnumeratePhysicalDevices(VK_Instance, &devices_count, nullptr);
+	if (!devices_count) {
+		throw std::runtime_error("ERROR :: CANNOT FIND ANY GPU THAT SUPPORTS VULKAN");
+	}
+	VK_Devices.resize(devices_count);
+	vkEnumeratePhysicalDevices(VK_Instance, &devices_count, VK_Devices.data());
+
+
+
+	if (pattern == DEVICE_PICKING_UP_PATTERN::USE_BEST_RATED_SUITABLE_DEVICE)
+	{
+		
+		for (const auto& device : VK_Devices) {
+			int score = RateDeviceSuitability(device);
+			rated_devices_candidates.insert(std::make_pair(score, device));
+		}
+
+		if (rated_devices_candidates.rbegin()->first > 0)
+		{
+			PhysicalDevice = rated_devices_candidates.rbegin()->second;
+			vkGetPhysicalDeviceProperties(PhysicalDevice, &VK_Device_Properties);
+			vkGetPhysicalDeviceFeatures(PhysicalDevice, &VK_Device_Features);
+
+		}
+		else
+		{
+			throw std::runtime_error("ERROR :: CANNOT FIND A SUITABLE GPU FOR THE APPLICATION IN THIS DEVICE");
+		}
+	}
+
+
+	if (pattern == DEVICE_PICKING_UP_PATTERN::USE_FIRST_SUITABLE_DEVICE)
+	{
+
+		for (auto& device : VK_Devices) {
+			if (isDeviceSuitable(device)) {
+				PhysicalDevice = device;
+				break;
+			}
+		}
+
+		if (PhysicalDevice == VK_NULL_HANDLE) {
+			throw std::runtime_error("ERROR :: CANNOT FIND A SUITABLE GPU FOR THE APPLICATION IN THIS DEVICE");
+		}
+	}
+
+}
+
+bool VRender::isDeviceSuitable(VkPhysicalDevice device)
+{
+	VkPhysicalDeviceProperties device_properties;
+	VkPhysicalDeviceFeatures device_features;
+
+	vkGetPhysicalDeviceProperties(device, &device_properties);
+	vkGetPhysicalDeviceFeatures(device, &device_features);
+
+
+	if ((device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU || device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU ) && device_features.geometryShader) {
+		VK_Device_Properties = device_properties;
+		VK_Device_Features = device_features;
+		return true;
+	}
+	else
+	return false;
+}
+
+int VRender::RateDeviceSuitability(VkPhysicalDevice device)
+{
+	//this function should be mre dynamique and programmable
+
+	VkPhysicalDeviceProperties device_properties;
+	VkPhysicalDeviceFeatures device_features;
+
+	vkGetPhysicalDeviceProperties(device, &device_properties);
+	vkGetPhysicalDeviceFeatures(device, &device_features);
+	int score = 0;
+	
+	// Discrete GPUs have a significant performance advantage
+	if (device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) score += 1000;
+	else if (device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU) score += 250;
+	 // Maximum possible size of textures affects graphics quality
+	score += device_properties.limits.maxImageDimension2D;
+	// Application can't function without geometry shaders
+	if (!device_features.geometryShader) 
+	return 0;	
+	
+
+	return score;
 
 }
 
@@ -204,13 +289,8 @@ void VRender::CreateInstance()
 
 	PrintGLFWExtensions(VK_Extensions);
 
-	try {
-		if (static_cast<VkResult>(vkCreateInstance(&VK_CreateInfo, nullptr, &VK_Instance)) != VK_SUCCESS) {
-			throw std::runtime_error("Faild to create a vulkan instance");
-		}
-	}
-	catch (std::exception& e) {
-		std::cout << '\n' <<e.what() << '\n';
+	if (static_cast<VkResult>(vkCreateInstance(&VK_CreateInfo, nullptr, &VK_Instance)) != VK_SUCCESS) {
+			throw std::runtime_error("ERROR :: Faild to create a vulkan instance");
 	}
 
 
@@ -221,7 +301,7 @@ void VRender::Render()
 	for (size_t test_index = 0; test_index < (sizeof(VulkanLoadingStatus) / sizeof(VulkanLoadingStatus[0])); test_index++)
 	{
 		if (VulkanLoadingStatus[test_index] == TEST_FAILD) {
-			std::cout << "\nFailed to Load the render successfully. Please check " << GetErrorName(test_index) << std::endl;
+			std::cout << "\nERROR :: Failed to Load the render successfully. Please check " << GetErrorName(test_index) << std::endl;
 			return;
 		}
 	}

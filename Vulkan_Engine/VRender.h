@@ -18,6 +18,8 @@
 #include <Windows.h>
 #include <iostream>
 #include <cstring>
+#include <map>
+
 
 #define TEST_FAILD 0
 
@@ -66,8 +68,10 @@ private:
 	bool CheckExtensionsBeforeInstance();
 	std::vector<const char*> GLFWGetRequiredExtension();
 
-	//devices
+	//devices functions
 	void PickPhysicalDevice();
+	bool isDeviceSuitable(VkPhysicalDevice device);
+	int RateDeviceSuitability(VkPhysicalDevice device);
 
 
 	bool GLFWsetter();
@@ -78,8 +82,19 @@ private:
 	//data
 	VkInstance VK_Instance;
 	GLFWwindow* VK_Window;
+	enum class DEVICE_PICKING_UP_PATTERN{USE_FIRST_SUITABLE_DEVICE,USE_BEST_RATED_SUITABLE_DEVICE};
+	DEVICE_PICKING_UP_PATTERN pattern;
+
+	//validation layers debugger messenger
 	VkDebugUtilsMessengerEXT debugMessenger;
 	VkDebugUtilsMessengerCreateInfoEXT VK_Messenger_CreateInfo{};
+
+	//devices
+	VkPhysicalDevice PhysicalDevice;
+	std::vector<VkPhysicalDevice> VK_Devices;
+	VkPhysicalDeviceProperties VK_Device_Properties;
+	VkPhysicalDeviceFeatures VK_Device_Features;
+	std::multimap<int, VkPhysicalDevice> rated_devices_candidates;
 
 	//Structs
 	VkApplicationInfo VK_AppInfo{};

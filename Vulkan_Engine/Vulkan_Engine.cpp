@@ -4,9 +4,13 @@
 
 int main()
 {
-    VRender render;
-
-    render.Render();
+    try {
+        VRender render;
+        render.Render();
+    }
+    catch (std::exception& e) {
+        std::cout << '\n' << e.what() << '\n';
+    }
 
     return 0;
 }
