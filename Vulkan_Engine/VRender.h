@@ -44,6 +44,7 @@ public:
 		return VK_FALSE; //need to keep it false as it will abort the call that triggered the callback with VK_ERROR_VALIDATION_FAILED_EXT error if it is true, we use it to test validation only
 	}
 
+
 private:
 
 	//extensions-based functions:

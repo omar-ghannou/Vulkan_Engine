@@ -10,6 +10,7 @@ VRender::VRender()
 	SetupDebugMessenger();
 	PickPhysicalDevice();
 
+
 }
 
 VRender::~VRender()
