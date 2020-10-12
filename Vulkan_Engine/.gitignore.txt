@@ -1,5 +1,0 @@
-Vulkan_Engine/[Bb]in/
-[Oo]bj/
-[Ll]og/
-Vulkan_Engine/Libraries/
-Vulkan_Engine/Intermediates/

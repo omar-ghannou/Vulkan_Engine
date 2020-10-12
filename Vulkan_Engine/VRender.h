@@ -68,6 +68,7 @@ private:
 	//devices
 
 
+
 	bool GLFWsetter();
 	bool Initiliazer();
 	void CreateInstance();

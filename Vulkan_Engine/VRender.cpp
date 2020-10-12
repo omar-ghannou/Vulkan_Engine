@@ -9,6 +9,7 @@ VRender::VRender()
 	CreateInstance(); 
 	SetupDebugMessenger();
 	PickPhysicalDevice();
+
 }
 
 VRender::~VRender()
