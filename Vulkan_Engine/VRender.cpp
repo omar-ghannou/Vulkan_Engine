@@ -126,6 +126,11 @@ std::vector<const char*> VRender::GLFWGetRequiredExtension()
 	return extensions;
 }
 
+void VRender::PickPhysicalDevice()
+{
+
+}
+
 bool VRender::GLFWsetter()
 {
 

@@ -67,7 +67,7 @@ private:
 	std::vector<const char*> GLFWGetRequiredExtension();
 
 	//devices
-
+	void PickPhysicalDevice();
 
 
 	bool GLFWsetter();
