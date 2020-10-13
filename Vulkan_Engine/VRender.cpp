@@ -2,14 +2,13 @@
 
 VRender::VRender()
 {
-
 	//ShowWindow(GetConsoleWindow(), SW_HIDE);
 	VulkanLoadingStatus[VALIDATION_LAYERS] = ValidationState();
 	VulkanLoadingStatus[VULKAN_LOADING] = Initiliazer();
 	VulkanLoadingStatus[GLFW_TEST] = GLFWsetter();
 	CreateInstance(); 
 	SetupDebugMessenger();
-	PickPhysicalDevice();
+	PickPhysicalDevice(VK_QUEUE_GRAPHICS_BIT);
 }
 
 VRender::~VRender()
@@ -121,7 +120,7 @@ std::vector<const char*> VRender::GLFWGetRequiredExtension()
 	return extensions;
 }
 
-void VRender::PickPhysicalDevice()
+void VRender::PickPhysicalDevice(VkQueueFlagBits bit)
 {
 	PhysicalDevice = VK_NULL_HANDLE;
 	uint32_t devices_count = 0;
@@ -138,7 +137,7 @@ void VRender::PickPhysicalDevice()
 	{
 		
 		for (const auto& device : VK_Devices) {
-			int score = RateDeviceSuitability(device);
+			int score = RateDeviceSuitability(device,bit);
 			rated_devices_candidates.insert(std::make_pair(score, device));
 		}
 
@@ -160,7 +159,7 @@ void VRender::PickPhysicalDevice()
 	{
 
 		for (auto& device : VK_Devices) {
-			if (isDeviceSuitable(device)) {
+			if (isDeviceSuitable(device,bit)) {
 				PhysicalDevice = device;
 				break;
 			}
@@ -173,8 +172,10 @@ void VRender::PickPhysicalDevice()
 
 }
 
-bool VRender::isDeviceSuitable(VkPhysicalDevice device)
+bool VRender::isDeviceSuitable(VkPhysicalDevice device, VkQueueFlagBits bit)
 {
+	if (!CheckQueueFamily(device, bit).isComplete()) return false;
+
 	VkPhysicalDeviceProperties device_properties;
 	VkPhysicalDeviceFeatures device_features;
 
@@ -191,9 +192,10 @@ bool VRender::isDeviceSuitable(VkPhysicalDevice device)
 	return false;
 }
 
-int VRender::RateDeviceSuitability(VkPhysicalDevice device)
+int VRender::RateDeviceSuitability(VkPhysicalDevice device, VkQueueFlagBits bit)
 {
 	//this function should be mre dynamique and programmable
+	if (!CheckQueueFamily(device, bit).isComplete()) return 0;
 
 	VkPhysicalDeviceProperties device_properties;
 	VkPhysicalDeviceFeatures device_features;
@@ -214,6 +216,28 @@ int VRender::RateDeviceSuitability(VkPhysicalDevice device)
 
 	return score;
 
+}
+
+std::vector<VkQueueFamilyProperties> VRender::FindQueueFamilies(VkPhysicalDevice device)
+{
+	uint32_t queueFamilyCount = 0;
+	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
+	std::vector<VkQueueFamilyProperties> device_queueFamily(queueFamilyCount);
+	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, device_queueFamily.data());
+	return device_queueFamily;
+}
+
+QueueFamiliesIndices VRender::CheckQueueFamily(VkPhysicalDevice device, VkQueueFlagBits bit)
+{
+	QueueFamiliesIndices indices{};
+	std::vector<VkQueueFamilyProperties> device_queueFamily = FindQueueFamilies(device);
+	int i = 0;
+	for (const auto& queue_family : device_queueFamily) {
+		if (queue_family.queueFlags & bit) indices.GraphicsFamily = i;
+		i++;
+		if (indices.isComplete()) break;
+	}
+	return indices;
 }
 
 bool VRender::GLFWsetter()

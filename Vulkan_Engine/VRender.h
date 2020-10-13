@@ -18,12 +18,22 @@
 #include <Windows.h>
 #include <iostream>
 #include <cstring>
-#include <map>
+#include <map> //C++17
+#include <optional> //C++17 
 
 
 #define TEST_FAILD 0
 
 enum state{GLFW_TEST,VULKAN_LOADING,VALIDATION_LAYERS};
+
+struct QueueFamiliesIndices
+{
+	std::optional<uint32_t> GraphicsFamily; //put to be optional type to distinguish between has value or not,
+	//as to determine a value in uint32_t to be a non-value index, theorically might be a real value of the returned queue
+	bool isComplete() {
+		return GraphicsFamily.has_value();
+	}
+};
 
 
 class VRender
@@ -69,11 +79,15 @@ private:
 	std::vector<const char*> GLFWGetRequiredExtension();
 
 	//devices functions
-	void PickPhysicalDevice();
-	bool isDeviceSuitable(VkPhysicalDevice device);
-	int RateDeviceSuitability(VkPhysicalDevice device);
+	void PickPhysicalDevice(VkQueueFlagBits bit);
+	bool isDeviceSuitable(VkPhysicalDevice device, VkQueueFlagBits bit);
+	int RateDeviceSuitability(VkPhysicalDevice device, VkQueueFlagBits bit);
 
+	//Queues
+	std::vector<VkQueueFamilyProperties> FindQueueFamilies(VkPhysicalDevice device);
+	QueueFamiliesIndices CheckQueueFamily(VkPhysicalDevice device, VkQueueFlagBits bit);
 
+	//first steps function
 	bool GLFWsetter();
 	bool Initiliazer();
 	void CreateInstance();
@@ -85,6 +99,7 @@ private:
 	enum class DEVICE_PICKING_UP_PATTERN{USE_FIRST_SUITABLE_DEVICE,USE_BEST_RATED_SUITABLE_DEVICE};
 	DEVICE_PICKING_UP_PATTERN pattern;
 
+
 	//validation layers debugger messenger
 	VkDebugUtilsMessengerEXT debugMessenger;
 	VkDebugUtilsMessengerCreateInfoEXT VK_Messenger_CreateInfo{};
@@ -95,6 +110,9 @@ private:
 	VkPhysicalDeviceProperties VK_Device_Properties;
 	VkPhysicalDeviceFeatures VK_Device_Features;
 	std::multimap<int, VkPhysicalDevice> rated_devices_candidates;
+
+	//Queues
+	std::vector<VkQueueFamilyProperties> VK_Device_QueueFamilies;
 
 	//Structs
 	VkApplicationInfo VK_AppInfo{};
