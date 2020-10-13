@@ -2,17 +2,21 @@
 
 VRender::VRender()
 {
+	pattern = DEVICE_PICKING_UP_PATTERN::USE_FIRST_SUITABLE_DEVICE;
 	//ShowWindow(GetConsoleWindow(), SW_HIDE);
 	VulkanLoadingStatus[VALIDATION_LAYERS] = ValidationState();
 	VulkanLoadingStatus[VULKAN_LOADING] = Initiliazer();
 	VulkanLoadingStatus[GLFW_TEST] = GLFWsetter();
+
 	CreateInstance(); 
 	SetupDebugMessenger();
 	PickPhysicalDevice(VK_QUEUE_GRAPHICS_BIT);
+	CreateLogicalDevice();
 }
 
 VRender::~VRender()
 {
+	vkDestroyDevice(LogicalDevice, nullptr); // device does not interact directly with the instance, that is why it is absent in the parameters
 	if (enableValidationLayers)
 		DestroyDebugUtilsMessengerEXT(VK_Instance, debugMessenger, nullptr);
 	vkDestroyInstance(VK_Instance, nullptr);
@@ -128,24 +132,25 @@ void VRender::PickPhysicalDevice(VkQueueFlagBits bit)
 	if (!devices_count) {
 		throw std::runtime_error("ERROR :: CANNOT FIND ANY GPU THAT SUPPORTS VULKAN");
 	}
-	VK_Devices.resize(devices_count);
-	vkEnumeratePhysicalDevices(VK_Instance, &devices_count, VK_Devices.data());
+	VK_Phy_Devices.resize(devices_count);
+	vkEnumeratePhysicalDevices(VK_Instance, &devices_count, VK_Phy_Devices.data());
 
 
 
 	if (pattern == DEVICE_PICKING_UP_PATTERN::USE_BEST_RATED_SUITABLE_DEVICE)
 	{
 		
-		for (const auto& device : VK_Devices) {
+		for (const auto& device : VK_Phy_Devices) {
 			int score = RateDeviceSuitability(device,bit);
-			rated_devices_candidates.insert(std::make_pair(score, device));
+			rated_phy_devices_candidates.insert(std::make_pair(score, device));
 		}
 
-		if (rated_devices_candidates.rbegin()->first > 0)
+		if (rated_phy_devices_candidates.rbegin()->first > 0)
 		{
-			PhysicalDevice = rated_devices_candidates.rbegin()->second;
-			vkGetPhysicalDeviceProperties(PhysicalDevice, &VK_Device_Properties);
-			vkGetPhysicalDeviceFeatures(PhysicalDevice, &VK_Device_Features);
+			PhysicalDevice = rated_phy_devices_candidates.rbegin()->second;
+			VK_Phy_Device_QueueFamilies = FindQueueFamilies(PhysicalDevice);
+			vkGetPhysicalDeviceProperties(PhysicalDevice, &VK_Phy_Device_Properties);
+			vkGetPhysicalDeviceFeatures(PhysicalDevice, &VK_Phy_Device_Features);
 
 		}
 		else
@@ -158,9 +163,10 @@ void VRender::PickPhysicalDevice(VkQueueFlagBits bit)
 	if (pattern == DEVICE_PICKING_UP_PATTERN::USE_FIRST_SUITABLE_DEVICE)
 	{
 
-		for (auto& device : VK_Devices) {
+		for (auto& device : VK_Phy_Devices) {
 			if (isDeviceSuitable(device,bit)) {
 				PhysicalDevice = device;
+				VK_Phy_Device_QueueFamilies = FindQueueFamilies(device);
 				break;
 			}
 		}
@@ -174,7 +180,8 @@ void VRender::PickPhysicalDevice(VkQueueFlagBits bit)
 
 bool VRender::isDeviceSuitable(VkPhysicalDevice device, VkQueueFlagBits bit)
 {
-	if (!CheckQueueFamily(device, bit).isComplete()) return false;
+	//this function should be more dynamique and programmable
+	if (!CheckForQueueFamily(device, bit).isComplete()) return false;
 
 	VkPhysicalDeviceProperties device_properties;
 	VkPhysicalDeviceFeatures device_features;
@@ -184,8 +191,8 @@ bool VRender::isDeviceSuitable(VkPhysicalDevice device, VkQueueFlagBits bit)
 
 
 	if ((device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU || device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU ) && device_features.geometryShader) {
-		VK_Device_Properties = device_properties;
-		VK_Device_Features = device_features;
+		VK_Phy_Device_Properties = device_properties;
+		VK_Phy_Device_Features = device_features;
 		return true;
 	}
 	else
@@ -194,8 +201,8 @@ bool VRender::isDeviceSuitable(VkPhysicalDevice device, VkQueueFlagBits bit)
 
 int VRender::RateDeviceSuitability(VkPhysicalDevice device, VkQueueFlagBits bit)
 {
-	//this function should be mre dynamique and programmable
-	if (!CheckQueueFamily(device, bit).isComplete()) return 0;
+	//this function should be more dynamique and programmable
+	if (!CheckForQueueFamily(device, bit).isComplete()) return 0;
 
 	VkPhysicalDeviceProperties device_properties;
 	VkPhysicalDeviceFeatures device_features;
@@ -227,17 +234,55 @@ std::vector<VkQueueFamilyProperties> VRender::FindQueueFamilies(VkPhysicalDevice
 	return device_queueFamily;
 }
 
-QueueFamiliesIndices VRender::CheckQueueFamily(VkPhysicalDevice device, VkQueueFlagBits bit)
+QueueFamiliesIndices VRender::CheckForQueueFamily(VkPhysicalDevice device, VkQueueFlagBits bit)
 {
 	QueueFamiliesIndices indices{};
 	std::vector<VkQueueFamilyProperties> device_queueFamily = FindQueueFamilies(device);
 	int i = 0;
 	for (const auto& queue_family : device_queueFamily) {
-		if (queue_family.queueFlags & bit) indices.GraphicsFamily = i;
+		if (queue_family.queueFlags & bit) indices.GraphicsFamily = i; 
 		i++;
 		if (indices.isComplete()) break;
 	}
 	return indices;
+}
+
+void VRender::CreateLogicalDevice()
+{
+	QueueFamiliesIndices indices = CheckForQueueFamily(PhysicalDevice, VK_QUEUE_GRAPHICS_BIT);
+	VkDeviceQueueCreateInfo QueueCreateInfo{};
+	QueueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+	QueueCreateInfo.queueFamilyIndex = indices.GraphicsFamily.value();
+	QueueCreateInfo.queueCount = 1;
+	float QueuePriority = 1.0f;
+	QueueCreateInfo.pQueuePriorities = &QueuePriority;
+
+	VkPhysicalDeviceFeatures Device_features{};
+
+	VkDeviceCreateInfo DeviceCreateInfo{};
+	DeviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+	DeviceCreateInfo.pQueueCreateInfos = &QueueCreateInfo;
+	DeviceCreateInfo.queueCreateInfoCount = 1;
+	DeviceCreateInfo.pEnabledFeatures = &Device_features;
+
+	//later we will look ino the extensions
+	//DeviceCreateInfo.enabledExtensionCount = VK_Extensions.size();
+	//DeviceCreateInfo.ppEnabledExtensionNames = VK_Extensions.data();
+	DeviceCreateInfo.enabledExtensionCount = 0;
+
+	//previous implementation of vulkan separate between validation layers of a device and of an instance. 
+	//now it is not the case, the device struct validation layers are ignored but for safety reasons implement them for older vulkan version support
+
+	if (enableValidationLayers) {
+		DeviceCreateInfo.enabledLayerCount = VK_ValidationLayers.size();
+		DeviceCreateInfo.ppEnabledLayerNames = VK_ValidationLayers.data();
+	}
+	else DeviceCreateInfo.enabledLayerCount = 0;
+
+	if (vkCreateDevice(PhysicalDevice, &DeviceCreateInfo, nullptr, &LogicalDevice) != VK_SUCCESS)
+		throw std::runtime_error("ERROR :: FAILD TO CREATE A LOGICAL DEVICE FROM THE PHYSICAL GPU");
+
+	vkGetDeviceQueue(LogicalDevice, indices.GraphicsFamily.value(), 0, &VK_GraphicsQueue);
 }
 
 bool VRender::GLFWsetter()

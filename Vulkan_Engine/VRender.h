@@ -78,14 +78,17 @@ private:
 	bool CheckExtensionsBeforeInstance();
 	std::vector<const char*> GLFWGetRequiredExtension();
 
-	//devices functions
+	//Physical devices functions
 	void PickPhysicalDevice(VkQueueFlagBits bit);
 	bool isDeviceSuitable(VkPhysicalDevice device, VkQueueFlagBits bit);
 	int RateDeviceSuitability(VkPhysicalDevice device, VkQueueFlagBits bit);
 
 	//Queues
 	std::vector<VkQueueFamilyProperties> FindQueueFamilies(VkPhysicalDevice device);
-	QueueFamiliesIndices CheckQueueFamily(VkPhysicalDevice device, VkQueueFlagBits bit);
+	QueueFamiliesIndices CheckForQueueFamily(VkPhysicalDevice device, VkQueueFlagBits bit);
+
+	//Logical devices functions
+	void CreateLogicalDevice();
 
 	//first steps function
 	bool GLFWsetter();
@@ -104,15 +107,19 @@ private:
 	VkDebugUtilsMessengerEXT debugMessenger;
 	VkDebugUtilsMessengerCreateInfoEXT VK_Messenger_CreateInfo{};
 
-	//devices
+	//physical devices
 	VkPhysicalDevice PhysicalDevice;
-	std::vector<VkPhysicalDevice> VK_Devices;
-	VkPhysicalDeviceProperties VK_Device_Properties;
-	VkPhysicalDeviceFeatures VK_Device_Features;
-	std::multimap<int, VkPhysicalDevice> rated_devices_candidates;
+	std::vector<VkPhysicalDevice> VK_Phy_Devices;
+	VkPhysicalDeviceProperties VK_Phy_Device_Properties;
+	VkPhysicalDeviceFeatures VK_Phy_Device_Features;
+	std::multimap<int, VkPhysicalDevice> rated_phy_devices_candidates;
 
 	//Queues
-	std::vector<VkQueueFamilyProperties> VK_Device_QueueFamilies;
+	std::vector<VkQueueFamilyProperties> VK_Phy_Device_QueueFamilies;
+	VkQueue VK_GraphicsQueue;
+
+	//logical devices
+	VkDevice LogicalDevice;
 
 	//Structs
 	VkApplicationInfo VK_AppInfo{};
