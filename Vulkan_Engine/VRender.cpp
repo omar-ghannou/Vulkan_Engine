@@ -3,13 +3,15 @@
 VRender::VRender()
 {
 	pattern = DEVICE_PICKING_UP_PATTERN::USE_FIRST_SUITABLE_DEVICE;
+
 	//ShowWindow(GetConsoleWindow(), SW_HIDE);
-	VulkanLoadingStatus[VALIDATION_LAYERS] = ValidationState();
 	VulkanLoadingStatus[VULKAN_LOADING] = Initiliazer();
+	VulkanLoadingStatus[VALIDATION_LAYERS] = ValidationState();
 	VulkanLoadingStatus[GLFW_TEST] = GLFWsetter();
 
 	CreateInstance(); 
 	SetupDebugMessenger();
+	CreateSurface(); //surface creation should take a place before physical device picking up, because it may affect the results if it is after
 	PickPhysicalDevice(VK_QUEUE_GRAPHICS_BIT);
 	CreateLogicalDevice();
 }
@@ -17,6 +19,7 @@ VRender::VRender()
 VRender::~VRender()
 {
 	vkDestroyDevice(LogicalDevice, nullptr); // device does not interact directly with the instance, that is why it is absent in the parameters
+	vkDestroySurfaceKHR(VK_Instance, VK_Surface, nullptr);
 	if (enableValidationLayers)
 		DestroyDebugUtilsMessengerEXT(VK_Instance, debugMessenger, nullptr);
 	vkDestroyInstance(VK_Instance, nullptr);
@@ -181,7 +184,7 @@ void VRender::PickPhysicalDevice(VkQueueFlagBits bit)
 bool VRender::isDeviceSuitable(VkPhysicalDevice device, VkQueueFlagBits bit)
 {
 	//this function should be more dynamique and programmable
-	if (!CheckForQueueFamily(device, bit).isComplete()) return false;
+	if (!CheckForQueueFamily(device, bit, true).isComplete()) return false;
 
 	VkPhysicalDeviceProperties device_properties;
 	VkPhysicalDeviceFeatures device_features;
@@ -202,7 +205,7 @@ bool VRender::isDeviceSuitable(VkPhysicalDevice device, VkQueueFlagBits bit)
 int VRender::RateDeviceSuitability(VkPhysicalDevice device, VkQueueFlagBits bit)
 {
 	//this function should be more dynamique and programmable
-	if (!CheckForQueueFamily(device, bit).isComplete()) return 0;
+	if (!CheckForQueueFamily(device, bit, true).isComplete()) return 0;
 
 	VkPhysicalDeviceProperties device_properties;
 	VkPhysicalDeviceFeatures device_features;
@@ -234,35 +237,51 @@ std::vector<VkQueueFamilyProperties> VRender::FindQueueFamilies(VkPhysicalDevice
 	return device_queueFamily;
 }
 
-QueueFamiliesIndices VRender::CheckForQueueFamily(VkPhysicalDevice device, VkQueueFlagBits bit)
+QueueFamiliesIndices VRender::CheckForQueueFamily(VkPhysicalDevice device, VkQueueFlagBits bit, bool CheckForPresentQueue)
 {
 	QueueFamiliesIndices indices{};
 	std::vector<VkQueueFamilyProperties> device_queueFamily = FindQueueFamilies(device);
 	int i = 0;
 	for (const auto& queue_family : device_queueFamily) {
-		if (queue_family.queueFlags & bit) indices.GraphicsFamily = i; 
-		i++;
-		if (indices.isComplete()) break;
+
+		if (queue_family.queueFlags & bit) {
+			indices.GraphicsFamily = i;
+			i++;
+			break;
+		}
+	}
+	if (CheckForPresentQueue)
+	{
+		if (i >= device_queueFamily.size()) i = indices.GraphicsFamily.value(); // PresentQueueIndex must be less than queueFamilyCountProperty returned by the function in FindQueueFamilies
+		VkBool32 PresentSupport = false;
+		vkGetPhysicalDeviceSurfaceSupportKHR(device, i, VK_Surface, &PresentSupport); //this may end up to be same queue as Graphics queue and we can explicity prefer them to be same for improved performance
+		if (PresentSupport) indices.PresentFamily = i;
 	}
 	return indices;
 }
 
 void VRender::CreateLogicalDevice()
 {
-	QueueFamiliesIndices indices = CheckForQueueFamily(PhysicalDevice, VK_QUEUE_GRAPHICS_BIT);
-	VkDeviceQueueCreateInfo QueueCreateInfo{};
-	QueueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-	QueueCreateInfo.queueFamilyIndex = indices.GraphicsFamily.value();
-	QueueCreateInfo.queueCount = 1;
-	float QueuePriority = 1.0f;
-	QueueCreateInfo.pQueuePriorities = &QueuePriority;
+	QueueFamiliesIndices indices = CheckForQueueFamily(PhysicalDevice, VK_QUEUE_GRAPHICS_BIT, true);
 
-	VkPhysicalDeviceFeatures Device_features{};
+	std::vector<VkDeviceQueueCreateInfo> QueueCreateInfos;
+	std::set<uint32_t> UniqueQueueFamilies = { indices.GraphicsFamily.value(),indices.PresentFamily.value() };
+	float QueuePriority = 1.0f;
+	for (const auto& queue : UniqueQueueFamilies) {
+		VkDeviceQueueCreateInfo QueueCreateInfo{};
+		QueueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+		QueueCreateInfo.queueFamilyIndex = queue;
+		QueueCreateInfo.queueCount = 1;
+		QueueCreateInfo.pQueuePriorities = &QueuePriority;
+		QueueCreateInfos.push_back(QueueCreateInfo);
+	}
+
+	VkPhysicalDeviceFeatures Device_features{};//we can use the ones selected and stored in VK_Phy_Device_Features variable, but no need for now
 
 	VkDeviceCreateInfo DeviceCreateInfo{};
 	DeviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-	DeviceCreateInfo.pQueueCreateInfos = &QueueCreateInfo;
-	DeviceCreateInfo.queueCreateInfoCount = 1;
+	DeviceCreateInfo.queueCreateInfoCount = static_cast<uint32_t>(QueueCreateInfos.size());
+	DeviceCreateInfo.pQueueCreateInfos = QueueCreateInfos.data();
 	DeviceCreateInfo.pEnabledFeatures = &Device_features;
 
 	//later we will look ino the extensions
@@ -274,7 +293,7 @@ void VRender::CreateLogicalDevice()
 	//now it is not the case, the device struct validation layers are ignored but for safety reasons implement them for older vulkan version support
 
 	if (enableValidationLayers) {
-		DeviceCreateInfo.enabledLayerCount = VK_ValidationLayers.size();
+		DeviceCreateInfo.enabledLayerCount = static_cast<uint32_t>(VK_ValidationLayers.size());
 		DeviceCreateInfo.ppEnabledLayerNames = VK_ValidationLayers.data();
 	}
 	else DeviceCreateInfo.enabledLayerCount = 0;
@@ -283,6 +302,27 @@ void VRender::CreateLogicalDevice()
 		throw std::runtime_error("ERROR :: FAILD TO CREATE A LOGICAL DEVICE FROM THE PHYSICAL GPU");
 
 	vkGetDeviceQueue(LogicalDevice, indices.GraphicsFamily.value(), 0, &VK_GraphicsQueue);
+	vkGetDeviceQueue(LogicalDevice, indices.PresentFamily.value(), 0, &VK_PresentQueue);
+	if (VK_GraphicsQueue == VK_PresentQueue) std::cout << "\nThe graphics and present queues are same\n";
+}
+
+void VRender::CreateSurface()
+{
+	//rather you can avoid this native implemetation and you glfwCreateWindowSurface function to create a surface
+	//the same way I did but it has a diffrent implementaion for each platform
+	//for linux replace WIN32 in all surface related commands to XCB
+
+	VK_Surface_CreateInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
+	VK_Surface_CreateInfo.hwnd = glfwGetWin32Window(VK_Window);
+	VK_Surface_CreateInfo.hinstance = GetModuleHandle(nullptr);
+
+	//vkCreateWin32SurfaceKHR is an-extension-based function, but it is so commonly that is why it is in the standard
+	//it does not need to be loaded explicitly
+	if (vkCreateWin32SurfaceKHR(VK_Instance, &VK_Surface_CreateInfo, nullptr, &VK_Surface) != VK_SUCCESS) 
+	{
+		throw std::runtime_error("ERROR :: FAILED TO CREATE A SURFACE ON YOUR WINDOWING SYSTEM");
+	}
+
 }
 
 bool VRender::GLFWsetter()

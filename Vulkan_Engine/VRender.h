@@ -3,23 +3,29 @@
 #pragma warning(push)
 #pragma warning(disable : 26812) 
 
+#define VK_USE_PLATFORM_WIN32_KHR
+#include <vulkan/vulkan.h>
+//#include <vulkan/vulkan.hpp>
+
 #define GLFW_INCLUDE_VULKAN
 #define GLFW_DLL
 #include <GLFW/glfw3.h>
+#define GLFW_EXPOSE_NATIVE_WGL
+#define GLFW_EXPOSE_NATIVE_WIN32
+#include <GLFW/glfw3native.h>
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/vec4.hpp>
 #include <glm/mat4x4.hpp>
 
-#include <vulkan/vulkan.h>
-#include <vector>
-//#include <vulkan/vulkan.hpp>
 #include <Windows.h>
 #include <iostream>
+#include <vector>
 #include <cstring>
 #include <map> //C++17
 #include <optional> //C++17 
+#include <set>
 
 
 #define TEST_FAILD 0
@@ -28,10 +34,12 @@ enum state{GLFW_TEST,VULKAN_LOADING,VALIDATION_LAYERS};
 
 struct QueueFamiliesIndices
 {
-	std::optional<uint32_t> GraphicsFamily; //put to be optional type to distinguish between has value or not,
+	//put to be optional type to distinguish between has value or not,
 	//as to determine a value in uint32_t to be a non-value index, theorically might be a real value of the returned queue
+	std::optional<uint32_t> GraphicsFamily; 
+	std::optional<uint32_t> PresentFamily;
 	bool isComplete() {
-		return GraphicsFamily.has_value();
+		return GraphicsFamily.has_value() && PresentFamily.has_value();
 	}
 };
 
@@ -85,12 +93,15 @@ private:
 
 	//Queues
 	std::vector<VkQueueFamilyProperties> FindQueueFamilies(VkPhysicalDevice device);
-	QueueFamiliesIndices CheckForQueueFamily(VkPhysicalDevice device, VkQueueFlagBits bit);
+	QueueFamiliesIndices CheckForQueueFamily(VkPhysicalDevice device, VkQueueFlagBits bit, bool CheckForPresentQueue);
 
 	//Logical devices functions
 	void CreateLogicalDevice();
 
-	//first steps function
+	//surface functions
+	void CreateSurface();
+
+	//first steps functions
 	bool GLFWsetter();
 	bool Initiliazer();
 	void CreateInstance();
@@ -107,6 +118,7 @@ private:
 	VkDebugUtilsMessengerEXT debugMessenger;
 	VkDebugUtilsMessengerCreateInfoEXT VK_Messenger_CreateInfo{};
 
+
 	//physical devices
 	VkPhysicalDevice PhysicalDevice;
 	std::vector<VkPhysicalDevice> VK_Phy_Devices;
@@ -117,13 +129,18 @@ private:
 	//Queues
 	std::vector<VkQueueFamilyProperties> VK_Phy_Device_QueueFamilies;
 	VkQueue VK_GraphicsQueue;
+	VkQueue VK_PresentQueue;
 
 	//logical devices
 	VkDevice LogicalDevice;
 
+	//surfaces
+	VkSurfaceKHR VK_Surface;
+
 	//Structs
 	VkApplicationInfo VK_AppInfo{};
 	VkInstanceCreateInfo VK_CreateInfo{};
+	VkWin32SurfaceCreateInfoKHR VK_Surface_CreateInfo{};
 
 	//Extensions
 	std::vector<VkExtensionProperties> VK_Available_Extensions;
@@ -137,7 +154,8 @@ private:
 #endif
 	uint32_t LayersCount = 0;
 	std::vector<const char*> VK_ValidationLayers = {
-		"VK_LAYER_KHRONOS_validation"
+		"VK_LAYER_KHRONOS_validation",
+		"VK_LAYER_LUNARG_standard_validation" // LUNARG family and the standard as meta-layer are deprecated use ONLY KHRONOS standard
 	};
 	std::vector<VkLayerProperties> VK_AvailableValidationLayers;
 
