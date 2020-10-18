@@ -127,6 +127,22 @@ std::vector<const char*> VRender::GLFWGetRequiredExtension()
 	return extensions;
 }
 
+bool VRender::CheckDeviceExtensionSupport(VkPhysicalDevice device)
+{
+	uint32_t DeviceExtensionCount = 0;
+	vkEnumerateDeviceExtensionProperties(device, nullptr, &DeviceExtensionCount, nullptr);
+	VK_Available_Device_Extensions.resize(DeviceExtensionCount);
+	vkEnumerateDeviceExtensionProperties(device, nullptr, &DeviceExtensionCount, VK_Available_Device_Extensions.data());
+
+	std::set<std::string> RequiredExtension(VK_Device_Extensions.begin(), VK_Device_Extensions.end());
+
+	for (const auto& extension : VK_Available_Device_Extensions) {
+		RequiredExtension.erase(extension.extensionName);
+	}
+
+	return RequiredExtension.empty();
+}
+
 void VRender::PickPhysicalDevice(VkQueueFlagBits bit)
 {
 	PhysicalDevice = VK_NULL_HANDLE;
@@ -155,6 +171,11 @@ void VRender::PickPhysicalDevice(VkQueueFlagBits bit)
 			vkGetPhysicalDeviceProperties(PhysicalDevice, &VK_Phy_Device_Properties);
 			vkGetPhysicalDeviceFeatures(PhysicalDevice, &VK_Phy_Device_Features);
 
+			std::cout << "\nphysical device extensions : \n";
+			for (const auto& extension : VK_Available_Device_Extensions) {
+				std::cout << extension.extensionName << '\t' << extension.specVersion << '\n';
+			}
+
 		}
 		else
 		{
@@ -165,11 +186,15 @@ void VRender::PickPhysicalDevice(VkQueueFlagBits bit)
 
 	if (pattern == DEVICE_PICKING_UP_PATTERN::USE_FIRST_SUITABLE_DEVICE)
 	{
-
+		int county = 0;
 		for (auto& device : VK_Phy_Devices) {
 			if (isDeviceSuitable(device,bit)) {
 				PhysicalDevice = device;
 				VK_Phy_Device_QueueFamilies = FindQueueFamilies(device);
+				std::cout << "\n\nPhysical device extensions : \n\n";
+				for (const auto& extension : VK_Available_Device_Extensions) {
+					std::cout << extension.extensionName << '\t' << extension.specVersion << '\n';
+				}
 				break;
 			}
 		}
@@ -186,12 +211,15 @@ bool VRender::isDeviceSuitable(VkPhysicalDevice device, VkQueueFlagBits bit)
 	//this function should be more dynamique and programmable
 	if (!CheckForQueueFamily(device, bit, true).isComplete()) return false;
 
+	if (!CheckDeviceExtensionSupport(device)) return false;
+
 	VkPhysicalDeviceProperties device_properties;
 	VkPhysicalDeviceFeatures device_features;
 
 	vkGetPhysicalDeviceProperties(device, &device_properties);
 	vkGetPhysicalDeviceFeatures(device, &device_features);
 
+	
 
 	if ((device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU || device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU ) && device_features.geometryShader) {
 		VK_Phy_Device_Properties = device_properties;
@@ -205,7 +233,10 @@ bool VRender::isDeviceSuitable(VkPhysicalDevice device, VkQueueFlagBits bit)
 int VRender::RateDeviceSuitability(VkPhysicalDevice device, VkQueueFlagBits bit)
 {
 	//this function should be more dynamique and programmable
+
 	if (!CheckForQueueFamily(device, bit, true).isComplete()) return 0;
+
+	if (!CheckDeviceExtensionSupport(device)) return 0;
 
 	VkPhysicalDeviceProperties device_properties;
 	VkPhysicalDeviceFeatures device_features;
@@ -284,10 +315,12 @@ void VRender::CreateLogicalDevice()
 	DeviceCreateInfo.pQueueCreateInfos = QueueCreateInfos.data();
 	DeviceCreateInfo.pEnabledFeatures = &Device_features;
 
-	//later we will look ino the extensions
-	//DeviceCreateInfo.enabledExtensionCount = VK_Extensions.size();
-	//DeviceCreateInfo.ppEnabledExtensionNames = VK_Extensions.data();
-	DeviceCreateInfo.enabledExtensionCount = 0;
+	if (!VK_Device_Extensions.empty()) 
+	{
+		DeviceCreateInfo.enabledExtensionCount = VK_Device_Extensions.size();
+		DeviceCreateInfo.ppEnabledExtensionNames = VK_Device_Extensions.data();
+	}
+	else DeviceCreateInfo.enabledExtensionCount = 0;
 
 	//previous implementation of vulkan separate between validation layers of a device and of an instance. 
 	//now it is not the case, the device struct validation layers are ignored but for safety reasons implement them for older vulkan version support
@@ -325,6 +358,11 @@ void VRender::CreateSurface()
 
 }
 
+SwapChainSupportDetails VRender::QuerySwapChainSupport(VkPhysicalDevice device)
+{
+	return SwapChainSupportDetails();
+}
+
 bool VRender::GLFWsetter()
 {
 
@@ -337,11 +375,8 @@ bool VRender::GLFWsetter()
 
 	this->VK_Window = glfwCreateWindow(800,600,"Vulkan Render",nullptr,nullptr);
 
-	if (VK_Window)
-		glfwMakeContextCurrent(VK_Window);
+	if (VK_Window) return true;
 	else return false;
-
-	return true;
 }
 
 bool VRender::Initiliazer()
@@ -362,6 +397,8 @@ bool VRender::Initiliazer()
 
 void VRender::CreateInstance()
 {
+	VK_Messenger_CreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT; // to avoid debugger warning about pNext in the instance creation, might I'll make a function to initialize all the structures
+
 	CheckExtensionsBeforeInstance();
 
 	//AppInfo
@@ -388,7 +425,7 @@ void VRender::CreateInstance()
 	{
 		VK_CreateInfo.enabledLayerCount = static_cast<uint32_t>(VK_ValidationLayers.size());
 		VK_CreateInfo.ppEnabledLayerNames = VK_ValidationLayers.data();
-		VK_CreateInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&VK_Messenger_CreateInfo;
+		VK_CreateInfo.pNext = dynamic_cast<VkDebugUtilsMessengerCreateInfoEXT*>(&VK_Messenger_CreateInfo);
 	}
 	else 
 	{
@@ -416,8 +453,8 @@ void VRender::Render()
 	}
 
 	while (!glfwWindowShouldClose(VK_Window)) {
-		//glfwPollEvents();
-		glfwWaitEvents();
+		glfwPollEvents();
+		//glfwWaitEvents();
 	}
 
 }

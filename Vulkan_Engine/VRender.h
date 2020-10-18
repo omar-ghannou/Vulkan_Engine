@@ -43,6 +43,13 @@ struct QueueFamiliesIndices
 	}
 };
 
+struct SwapChainSupportDetails 
+{
+	VkSurfaceCapabilitiesKHR SurfaceCapabilities;
+	std::vector<VkSurfaceFormatKHR> SurfaceFormats;
+	std::vector<VkPresentModeKHR> SurfacePresentMode;
+};
+
 
 class VRender
 {
@@ -82,9 +89,12 @@ private:
 	bool ValidationState();
 	void SetupDebugMessenger();
 
-	//extension's functions:
+	//vulkan extension's functions:
 	bool CheckExtensionsBeforeInstance();
 	std::vector<const char*> GLFWGetRequiredExtension();
+
+	//device extension's functions
+	bool CheckDeviceExtensionSupport(VkPhysicalDevice device);
 
 	//Physical devices functions
 	void PickPhysicalDevice(VkQueueFlagBits bit);
@@ -101,6 +111,9 @@ private:
 	//surface functions
 	void CreateSurface();
 
+	//SwapChain
+	SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device);
+
 	//first steps functions
 	bool GLFWsetter();
 	bool Initiliazer();
@@ -116,7 +129,7 @@ private:
 
 	//validation layers debugger messenger
 	VkDebugUtilsMessengerEXT debugMessenger;
-	VkDebugUtilsMessengerCreateInfoEXT VK_Messenger_CreateInfo{};
+	VkDebugUtilsMessengerCreateInfoEXT VK_Messenger_CreateInfo;
 
 
 	//physical devices
@@ -142,9 +155,15 @@ private:
 	VkInstanceCreateInfo VK_CreateInfo{};
 	VkWin32SurfaceCreateInfoKHR VK_Surface_CreateInfo{};
 
-	//Extensions
+	//Vulkan Extensions
 	std::vector<VkExtensionProperties> VK_Available_Extensions;
 	std::vector<const char*> VK_Extensions;
+
+	//Device Extensions
+	std::vector<VkExtensionProperties> VK_Available_Device_Extensions;
+	std::vector<const char*> VK_Device_Extensions = {
+		VK_KHR_SWAPCHAIN_EXTENSION_NAME
+	};
 
 	//validation layers
 #ifdef NDEBUG
