@@ -186,7 +186,6 @@ void VRender::PickPhysicalDevice(VkQueueFlagBits bit)
 
 	if (pattern == DEVICE_PICKING_UP_PATTERN::USE_FIRST_SUITABLE_DEVICE)
 	{
-		int county = 0;
 		for (auto& device : VK_Phy_Devices) {
 			if (isDeviceSuitable(device,bit)) {
 				PhysicalDevice = device;
@@ -213,6 +212,8 @@ bool VRender::isDeviceSuitable(VkPhysicalDevice device, VkQueueFlagBits bit)
 
 	if (!CheckDeviceExtensionSupport(device)) return false;
 
+	if (!QuerySwapChainSupport(device)) return false;
+
 	VkPhysicalDeviceProperties device_properties;
 	VkPhysicalDeviceFeatures device_features;
 
@@ -237,6 +238,8 @@ int VRender::RateDeviceSuitability(VkPhysicalDevice device, VkQueueFlagBits bit)
 	if (!CheckForQueueFamily(device, bit, true).isComplete()) return 0;
 
 	if (!CheckDeviceExtensionSupport(device)) return 0;
+
+	if (!QuerySwapChainSupport(device)) return 0;
 
 	VkPhysicalDeviceProperties device_properties;
 	VkPhysicalDeviceFeatures device_features;
@@ -358,9 +361,39 @@ void VRender::CreateSurface()
 
 }
 
-SwapChainSupportDetails VRender::QuerySwapChainSupport(VkPhysicalDevice device)
+bool VRender::QuerySwapChainSupport(VkPhysicalDevice device)
 {
-	return SwapChainSupportDetails();
+	
+	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, VK_Surface, &SwapChainSupport.SurfaceCapabilities);
+
+	uint32_t FormatsCount = 0;
+
+	vkGetPhysicalDeviceSurfaceFormatsKHR(device, VK_Surface, &FormatsCount, nullptr);
+	if (FormatsCount)
+	{
+		SwapChainSupport.SurfaceFormats.resize(FormatsCount);
+		vkGetPhysicalDeviceSurfaceFormatsKHR(device, VK_Surface, &FormatsCount, SwapChainSupport.SurfaceFormats.data());
+	}
+
+	uint32_t PresentModeCount = 0;
+
+	vkGetPhysicalDeviceSurfacePresentModesKHR(device, VK_Surface, &PresentModeCount, nullptr);
+	if (PresentModeCount)
+	{
+		SwapChainSupport.SurfacePresentMode.resize(PresentModeCount);
+		vkGetPhysicalDeviceSurfacePresentModesKHR(device, VK_Surface, &PresentModeCount, SwapChainSupport.SurfacePresentMode.data());
+	}
+
+	return (!SwapChainSupport.SurfaceFormats.empty() && !SwapChainSupport.SurfacePresentMode.empty());
+
+}
+
+VkSurfaceFormatKHR VRender::SelectSwapChainFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)
+{
+	for (const auto& format : availableFormats) {
+		if (format.format == VK_FORMAT_B8G8R8A8_SRGB && format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) return format;
+	}
+	return availableFormats[0];
 }
 
 bool VRender::GLFWsetter()
@@ -436,7 +469,7 @@ void VRender::CreateInstance()
 	PrintGLFWExtensions(VK_Extensions);
 
 	if (static_cast<VkResult>(vkCreateInstance(&VK_CreateInfo, nullptr, &VK_Instance)) != VK_SUCCESS) {
-			throw std::runtime_error("ERROR :: Faild to create a vulkan instance");
+			throw std::runtime_error("ERROR :: Failed to create a vulkan instance");
 	}
 
 

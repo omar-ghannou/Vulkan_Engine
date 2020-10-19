@@ -112,7 +112,8 @@ private:
 	void CreateSurface();
 
 	//SwapChain
-	SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device);
+	bool QuerySwapChainSupport(VkPhysicalDevice device);
+	VkSurfaceFormatKHR SelectSwapChainFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
 
 	//first steps functions
 	bool GLFWsetter();
@@ -164,6 +165,9 @@ private:
 	std::vector<const char*> VK_Device_Extensions = {
 		VK_KHR_SWAPCHAIN_EXTENSION_NAME
 	};
+
+	//SwapChain 
+	SwapChainSupportDetails SwapChainSupport;
 
 	//validation layers
 #ifdef NDEBUG
