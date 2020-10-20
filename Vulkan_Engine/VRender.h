@@ -3,6 +3,8 @@
 #pragma warning(push)
 #pragma warning(disable : 26812) 
 
+#define NOMINMAX //avoid windows vc++ defined min/max funcs
+
 #define VK_USE_PLATFORM_WIN32_KHR
 #include <vulkan/vulkan.h>
 //#include <vulkan/vulkan.hpp>
@@ -26,6 +28,8 @@
 #include <map> //C++17
 #include <optional> //C++17 
 #include <set>
+#include <cstdint> //for UINT32_MAX
+#include <algorithm>
 
 
 #define TEST_FAILD 0
@@ -45,7 +49,7 @@ struct QueueFamiliesIndices
 
 struct SwapChainSupportDetails 
 {
-	VkSurfaceCapabilitiesKHR SurfaceCapabilities;
+	VkSurfaceCapabilitiesKHR SurfaceCapabilities{};
 	std::vector<VkSurfaceFormatKHR> SurfaceFormats;
 	std::vector<VkPresentModeKHR> SurfacePresentMode;
 };
@@ -114,12 +118,14 @@ private:
 	//SwapChain
 	bool QuerySwapChainSupport(VkPhysicalDevice device);
 	VkSurfaceFormatKHR SelectSwapChainFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
+	VkPresentModeKHR  SelectSwapChainPresentMode(const std::vector<VkPresentModeKHR>& availableModes);
+	VkExtent2D SelectSwapChainExtent(const VkSurfaceCapabilitiesKHR& capabilities);
+	void CreateSwapChain();
 
 	//first steps functions
 	bool GLFWsetter();
 	bool Initiliazer();
 	void CreateInstance();
-
 
 	//data
 	VkInstance VK_Instance;
@@ -168,6 +174,16 @@ private:
 
 	//SwapChain 
 	SwapChainSupportDetails SwapChainSupport;
+	VkSwapchainCreateInfoKHR VK_SwapChain_createInfo;
+	VkSwapchainKHR VK_SwapChain;
+	VkSurfaceFormatKHR format;
+	VkExtent2D extent;
+	VkPresentModeKHR presentMode;
+
+	//SwapChain Images
+	std::vector<VkImage> SwapChainImages;
+
+
 
 	//validation layers
 #ifdef NDEBUG

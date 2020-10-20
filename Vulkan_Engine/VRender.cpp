@@ -14,10 +14,12 @@ VRender::VRender()
 	CreateSurface(); //surface creation should take a place before physical device picking up, because it may affect the results if it is after
 	PickPhysicalDevice(VK_QUEUE_GRAPHICS_BIT);
 	CreateLogicalDevice();
+	CreateSwapChain();
 }
 
 VRender::~VRender()
 {
+	vkDestroySwapchainKHR(LogicalDevice, VK_SwapChain, nullptr);
 	vkDestroyDevice(LogicalDevice, nullptr); // device does not interact directly with the instance, that is why it is absent in the parameters
 	vkDestroySurfaceKHR(VK_Instance, VK_Surface, nullptr);
 	if (enableValidationLayers)
@@ -320,7 +322,7 @@ void VRender::CreateLogicalDevice()
 
 	if (!VK_Device_Extensions.empty()) 
 	{
-		DeviceCreateInfo.enabledExtensionCount = VK_Device_Extensions.size();
+		DeviceCreateInfo.enabledExtensionCount = static_cast<uint32_t>(VK_Device_Extensions.size());
 		DeviceCreateInfo.ppEnabledExtensionNames = VK_Device_Extensions.data();
 	}
 	else DeviceCreateInfo.enabledExtensionCount = 0;
@@ -394,6 +396,86 @@ VkSurfaceFormatKHR VRender::SelectSwapChainFormat(const std::vector<VkSurfaceFor
 		if (format.format == VK_FORMAT_B8G8R8A8_SRGB && format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) return format;
 	}
 	return availableFormats[0];
+}
+
+VkPresentModeKHR VRender::SelectSwapChainPresentMode(const std::vector<VkPresentModeKHR>& availableModes)
+{
+	for (const auto& presentMode : availableModes) 
+	{
+		if (presentMode == VK_PRESENT_MODE_MAILBOX_KHR) return presentMode;
+	}
+	return VK_PRESENT_MODE_FIFO_KHR;
+}
+
+VkExtent2D VRender::SelectSwapChainExtent(const VkSurfaceCapabilitiesKHR& capabilities)
+{
+	if(capabilities.currentExtent.width != UINT32_MAX)
+	{
+		return capabilities.currentExtent;
+	}
+	else
+	{
+		VkExtent2D actualExtent = { 1080,720 };
+		
+		actualExtent.width = std::max(capabilities.minImageExtent.width, std::min(capabilities.maxImageExtent.width, actualExtent.width));
+		actualExtent.height = std::max(capabilities.minImageExtent.height, std::min(capabilities.maxImageExtent.height, actualExtent.height));
+		return actualExtent;
+	}
+}
+
+void VRender::CreateSwapChain()
+{
+	format = SelectSwapChainFormat(SwapChainSupport.SurfaceFormats);
+	extent = SelectSwapChainExtent(SwapChainSupport.SurfaceCapabilities);
+	presentMode = SelectSwapChainPresentMode(SwapChainSupport.SurfacePresentMode);
+
+	uint32_t imageCount = SwapChainSupport.SurfaceCapabilities.minImageCount + 1; //take min+1 to avoid waiting on the driver 
+	if (SwapChainSupport.SurfaceCapabilities.maxImageCount > 0 && imageCount > SwapChainSupport.SurfaceCapabilities.maxImageCount)
+		imageCount = SwapChainSupport.SurfaceCapabilities.maxImageCount;
+
+	VK_SwapChain_createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+	VK_SwapChain_createInfo.surface = VK_Surface;
+	VK_SwapChain_createInfo.minImageCount = imageCount;
+	VK_SwapChain_createInfo.imageFormat = format.format;
+	VK_SwapChain_createInfo.imageColorSpace = format.colorSpace;
+	VK_SwapChain_createInfo.imageExtent = extent;
+	VK_SwapChain_createInfo.imageArrayLayers = 1; //always 1 unless developing stereoscopic 3D
+	VK_SwapChain_createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+
+	QueueFamiliesIndices indices = CheckForQueueFamily(PhysicalDevice, VK_QUEUE_GRAPHICS_BIT, true);
+	uint32_t QueueIndices[] = { indices.GraphicsFamily.value(),indices.PresentFamily.value() };
+
+	if (indices.GraphicsFamily != indices.PresentFamily) 
+	{
+		VK_SwapChain_createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT; //Images can be used across multiple queue families without explicit ownership transfers.
+		VK_SwapChain_createInfo.queueFamilyIndexCount = 2;
+		VK_SwapChain_createInfo.pQueueFamilyIndices = QueueIndices;
+	}
+	else
+	{
+		VK_SwapChain_createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE; //An image is owned by one queue family at a time and ownership must be explicitly transfered before using it in another queue family. This option offers the best performance.
+		VK_SwapChain_createInfo.queueFamilyIndexCount = 0;
+		VK_SwapChain_createInfo.pQueueFamilyIndices = nullptr;
+	}
+
+	VK_SwapChain_createInfo.preTransform = SwapChainSupport.SurfaceCapabilities.currentTransform; //no transforms specified
+	VK_SwapChain_createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+
+	VK_SwapChain_createInfo.presentMode = presentMode;
+
+	VK_SwapChain_createInfo.clipped = VK_TRUE;
+
+	VK_SwapChain_createInfo.oldSwapchain = VK_NULL_HANDLE;
+
+	if (vkCreateSwapchainKHR(LogicalDevice, &VK_SwapChain_createInfo, nullptr, &VK_SwapChain) != VK_SUCCESS)
+	{
+		throw std::runtime_error("ERROR :: FAILED TO CREATE A SWAP CHAIN FOR THE SURFACE");
+	}
+
+	vkGetSwapchainImagesKHR(LogicalDevice, VK_SwapChain, &imageCount, nullptr);
+	SwapChainImages.resize(imageCount);
+	vkGetSwapchainImagesKHR(LogicalDevice, VK_SwapChain, &imageCount, SwapChainImages.data());
+
 }
 
 bool VRender::GLFWsetter()
