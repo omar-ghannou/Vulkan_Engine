@@ -1,6 +1,6 @@
 #include "VRender.h"
 
-VRender::VRender()
+Vulkan_Engine::VRender::VRender()
 {
 	pattern = DEVICE_PICKING_UP_PATTERN::USE_FIRST_SUITABLE_DEVICE;
 
@@ -18,7 +18,7 @@ VRender::VRender()
 	CreateImageView();
 }
 
-VRender::~VRender()
+Vulkan_Engine::VRender::~VRender()
 {
 	for (auto& ImageView : SwapChainImageViews) {
 		vkDestroyImageView(LogicalDevice, ImageView, nullptr);
@@ -33,20 +33,20 @@ VRender::~VRender()
 	glfwTerminate();
 }
 
-VkResult VRender::CreateDebugUtilsMessengerEXT(const VkInstance& instance, VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger)
+VkResult Vulkan_Engine::VRender::CreateDebugUtilsMessengerEXT(const VkInstance& instance, VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger)
 {
 	auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
 	if (func != nullptr) return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
 	else return VK_ERROR_EXTENSION_NOT_PRESENT;
 }
 
-void VRender::DestroyDebugUtilsMessengerEXT(const VkInstance& instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator)
+void Vulkan_Engine::VRender::DestroyDebugUtilsMessengerEXT(const VkInstance& instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator)
 {
 	auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
 	if (func != nullptr) func(instance, debugMessenger, pAllocator);
 }
 
-bool VRender::CheckValidationLayerSupport()
+bool Vulkan_Engine::VRender::CheckValidationLayerSupport()
 {
 	vkEnumerateInstanceLayerProperties(&LayersCount, nullptr);
 	VK_AvailableValidationLayers.resize(LayersCount);
@@ -72,7 +72,7 @@ bool VRender::CheckValidationLayerSupport()
 	return true;
 }
 
-bool VRender::ValidationState()
+bool Vulkan_Engine::VRender::ValidationState()
 {
 	if (enableValidationLayers) {
 		std::cout << "Debug Mode enabled\n\n";
@@ -81,7 +81,7 @@ bool VRender::ValidationState()
 	return true;
 }
 
-void VRender::SetupDebugMessenger()
+void Vulkan_Engine::VRender::SetupDebugMessenger()
 {
 	if (!enableValidationLayers) return;
 
@@ -103,7 +103,7 @@ void VRender::SetupDebugMessenger()
 
 }
 
-bool VRender::CheckExtensionsBeforeInstance()
+bool Vulkan_Engine::VRender::CheckExtensionsBeforeInstance()
 {
 	uint32_t VK_ExtensionsCount;
 	std::cout << "Vulkan extensions \n\n";
@@ -116,7 +116,7 @@ bool VRender::CheckExtensionsBeforeInstance()
 	return true;
 }
 
-std::vector<const char*> VRender::GLFWGetRequiredExtension()
+std::vector<const char*> Vulkan_Engine::VRender::GLFWGetRequiredExtension()
 {
 	uint32_t GLFW_VK_ExtensionCount;
 	const char** glfwExtensions;
@@ -133,7 +133,7 @@ std::vector<const char*> VRender::GLFWGetRequiredExtension()
 	return extensions;
 }
 
-bool VRender::CheckDeviceExtensionSupport(VkPhysicalDevice device)
+bool Vulkan_Engine::VRender::CheckDeviceExtensionSupport(VkPhysicalDevice device)
 {
 	uint32_t DeviceExtensionCount = 0;
 	vkEnumerateDeviceExtensionProperties(device, nullptr, &DeviceExtensionCount, nullptr);
@@ -149,7 +149,7 @@ bool VRender::CheckDeviceExtensionSupport(VkPhysicalDevice device)
 	return RequiredExtension.empty();
 }
 
-void VRender::PickPhysicalDevice(VkQueueFlagBits bit)
+void Vulkan_Engine::VRender::PickPhysicalDevice(VkQueueFlagBits bit)
 {
 	PhysicalDevice = VK_NULL_HANDLE;
 	uint32_t devices_count = 0;
@@ -211,7 +211,7 @@ void VRender::PickPhysicalDevice(VkQueueFlagBits bit)
 
 }
 
-bool VRender::isDeviceSuitable(VkPhysicalDevice device, VkQueueFlagBits bit)
+bool Vulkan_Engine::VRender::isDeviceSuitable(VkPhysicalDevice device, VkQueueFlagBits bit)
 {
 	//this function should be more dynamique and programmable
 	if (!CheckForQueueFamily(device, bit, true).isComplete()) return false;
@@ -237,7 +237,7 @@ bool VRender::isDeviceSuitable(VkPhysicalDevice device, VkQueueFlagBits bit)
 	return false;
 }
 
-int VRender::RateDeviceSuitability(VkPhysicalDevice device, VkQueueFlagBits bit)
+int Vulkan_Engine::VRender::RateDeviceSuitability(VkPhysicalDevice device, VkQueueFlagBits bit)
 {
 	//this function should be more dynamique and programmable
 
@@ -268,7 +268,7 @@ int VRender::RateDeviceSuitability(VkPhysicalDevice device, VkQueueFlagBits bit)
 
 }
 
-std::vector<VkQueueFamilyProperties> VRender::FindQueueFamilies(VkPhysicalDevice device)
+std::vector<VkQueueFamilyProperties> Vulkan_Engine::VRender::FindQueueFamilies(VkPhysicalDevice device)
 {
 	uint32_t queueFamilyCount = 0;
 	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
@@ -277,7 +277,7 @@ std::vector<VkQueueFamilyProperties> VRender::FindQueueFamilies(VkPhysicalDevice
 	return device_queueFamily;
 }
 
-QueueFamiliesIndices VRender::CheckForQueueFamily(VkPhysicalDevice device, VkQueueFlagBits bit, bool CheckForPresentQueue)
+Vulkan_Engine::QueueFamiliesIndices Vulkan_Engine::VRender::CheckForQueueFamily(VkPhysicalDevice device, VkQueueFlagBits bit, bool CheckForPresentQueue)
 {
 	QueueFamiliesIndices indices{};
 	std::vector<VkQueueFamilyProperties> device_queueFamily = FindQueueFamilies(device);
@@ -300,7 +300,7 @@ QueueFamiliesIndices VRender::CheckForQueueFamily(VkPhysicalDevice device, VkQue
 	return indices;
 }
 
-void VRender::CreateLogicalDevice()
+void Vulkan_Engine::VRender::CreateLogicalDevice()
 {
 	QueueFamiliesIndices indices = CheckForQueueFamily(PhysicalDevice, VK_QUEUE_GRAPHICS_BIT, true);
 
@@ -348,7 +348,7 @@ void VRender::CreateLogicalDevice()
 	if (VK_GraphicsQueue == VK_PresentQueue) std::cout << "\nThe graphics and present queues are same\n";
 }
 
-void VRender::CreateSurface()
+void Vulkan_Engine::VRender::CreateSurface()
 {
 	//rather you can avoid this native implemetation and you glfwCreateWindowSurface function to create a surface
 	//the same way I did but it has a diffrent implementaion for each platform
@@ -367,7 +367,7 @@ void VRender::CreateSurface()
 
 }
 
-bool VRender::QuerySwapChainSupport(VkPhysicalDevice device)
+bool Vulkan_Engine::VRender::QuerySwapChainSupport(VkPhysicalDevice device)
 {
 	
 	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, VK_Surface, &SwapChainSupport.SurfaceCapabilities);
@@ -394,7 +394,7 @@ bool VRender::QuerySwapChainSupport(VkPhysicalDevice device)
 
 }
 
-VkSurfaceFormatKHR VRender::SelectSwapChainFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)
+VkSurfaceFormatKHR Vulkan_Engine::VRender::SelectSwapChainFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)
 {
 	for (const auto& format : availableFormats) {
 		if (format.format == VK_FORMAT_B8G8R8A8_SRGB && format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) return format;
@@ -402,7 +402,7 @@ VkSurfaceFormatKHR VRender::SelectSwapChainFormat(const std::vector<VkSurfaceFor
 	return availableFormats[0];
 }
 
-VkPresentModeKHR VRender::SelectSwapChainPresentMode(const std::vector<VkPresentModeKHR>& availableModes)
+VkPresentModeKHR Vulkan_Engine::VRender::SelectSwapChainPresentMode(const std::vector<VkPresentModeKHR>& availableModes)
 {
 	for (const auto& presentMode : availableModes) 
 	{
@@ -411,7 +411,7 @@ VkPresentModeKHR VRender::SelectSwapChainPresentMode(const std::vector<VkPresent
 	return VK_PRESENT_MODE_FIFO_KHR;
 }
 
-VkExtent2D VRender::SelectSwapChainExtent(const VkSurfaceCapabilitiesKHR& capabilities)
+VkExtent2D Vulkan_Engine::VRender::SelectSwapChainExtent(const VkSurfaceCapabilitiesKHR& capabilities)
 {
 	if(capabilities.currentExtent.width != UINT32_MAX)
 	{
@@ -427,7 +427,7 @@ VkExtent2D VRender::SelectSwapChainExtent(const VkSurfaceCapabilitiesKHR& capabi
 	}
 }
 
-void VRender::CreateSwapChain()
+void Vulkan_Engine::VRender::CreateSwapChain()
 {
 	format = SelectSwapChainFormat(SwapChainSupport.SurfaceFormats);
 	extent = SelectSwapChainExtent(SwapChainSupport.SurfaceCapabilities);
@@ -482,7 +482,7 @@ void VRender::CreateSwapChain()
 
 }
 
-void VRender::CreateImageView()
+void Vulkan_Engine::VRender::CreateImageView()
 {
 	SwapChainImageViews.resize(SwapChainImages.size());
 
@@ -513,7 +513,7 @@ void VRender::CreateImageView()
 	}
 }
 
-bool VRender::GLFWsetter()
+bool Vulkan_Engine::VRender::GLFWsetter()
 {
 
 	if (glfwInit() != GLFW_TRUE) {
@@ -529,7 +529,7 @@ bool VRender::GLFWsetter()
 	else return false;
 }
 
-bool VRender::Initiliazer()
+bool Vulkan_Engine::VRender::Initiliazer()
 {
 #if defined _WIN32 
 	//HINSTANCE vulkan_library = LoadLibraryA("vulkan-1.dll");
@@ -545,7 +545,7 @@ bool VRender::Initiliazer()
 	return true;
 }
 
-void VRender::CreateInstance()
+void Vulkan_Engine::VRender::CreateInstance()
 {
 	VK_Messenger_CreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT; // to avoid debugger warning about pNext in the instance creation, might I'll make a function to initialize all the structures
 
@@ -592,7 +592,7 @@ void VRender::CreateInstance()
 
 }
 
-void VRender::Render()
+void Vulkan_Engine::VRender::Render()
 {
 	for (size_t test_index = 0; test_index < (sizeof(VulkanLoadingStatus) / sizeof(VulkanLoadingStatus[0])); test_index++)
 	{
@@ -609,7 +609,7 @@ void VRender::Render()
 
 }
 
-std::string VRender::GetErrorName(size_t index)
+std::string Vulkan_Engine::VRender::GetErrorName(size_t index)
 {
 	switch (index)
 	{
@@ -629,7 +629,7 @@ std::string VRender::GetErrorName(size_t index)
 	return "";
 }
 
-void VRender::PrintGLFWExtensions(std::vector<const char*> vec)
+void Vulkan_Engine::VRender::PrintGLFWExtensions(std::vector<const char*> vec)
 {
 	std::cout << "\n\nGLFW Vulkan required extensions \n\n";
 	for (auto& vec_element : vec) {
