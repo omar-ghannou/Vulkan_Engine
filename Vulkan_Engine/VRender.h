@@ -121,6 +121,9 @@ private:
 	VkPresentModeKHR  SelectSwapChainPresentMode(const std::vector<VkPresentModeKHR>& availableModes);
 	VkExtent2D SelectSwapChainExtent(const VkSurfaceCapabilitiesKHR& capabilities);
 	void CreateSwapChain();
+	
+	//SwapChain ImageViews
+	void CreateImageView();
 
 	//first steps functions
 	bool GLFWsetter();
@@ -183,6 +186,8 @@ private:
 	//SwapChain Images
 	std::vector<VkImage> SwapChainImages;
 
+	//SwapChain ImageViews
+	std::vector<VkImageView> SwapChainImageViews;
 
 
 	//validation layers

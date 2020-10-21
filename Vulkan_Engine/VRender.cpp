@@ -15,10 +15,14 @@ VRender::VRender()
 	PickPhysicalDevice(VK_QUEUE_GRAPHICS_BIT);
 	CreateLogicalDevice();
 	CreateSwapChain();
+	CreateImageView();
 }
 
 VRender::~VRender()
 {
+	for (auto& ImageView : SwapChainImageViews) {
+		vkDestroyImageView(LogicalDevice, ImageView, nullptr);
+	}
 	vkDestroySwapchainKHR(LogicalDevice, VK_SwapChain, nullptr);
 	vkDestroyDevice(LogicalDevice, nullptr); // device does not interact directly with the instance, that is why it is absent in the parameters
 	vkDestroySurfaceKHR(VK_Instance, VK_Surface, nullptr);
@@ -476,6 +480,37 @@ void VRender::CreateSwapChain()
 	SwapChainImages.resize(imageCount);
 	vkGetSwapchainImagesKHR(LogicalDevice, VK_SwapChain, &imageCount, SwapChainImages.data());
 
+}
+
+void VRender::CreateImageView()
+{
+	SwapChainImageViews.resize(SwapChainImages.size());
+
+	for (size_t i = 0; i < SwapChainImages.size(); i++) 
+	{
+		VkImageViewCreateInfo ImageView_create_info{};
+		ImageView_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		ImageView_create_info.image = SwapChainImages[i];
+		ImageView_create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		ImageView_create_info.format = format.format;
+
+		ImageView_create_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+		ImageView_create_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+		ImageView_create_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+		ImageView_create_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+
+		ImageView_create_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		ImageView_create_info.subresourceRange.baseMipLevel = 0;
+		ImageView_create_info.subresourceRange.levelCount = 1;
+		ImageView_create_info.subresourceRange.baseArrayLayer = 0;
+		ImageView_create_info.subresourceRange.layerCount = 1;
+
+		if (vkCreateImageView(LogicalDevice, &ImageView_create_info, nullptr, &SwapChainImageViews[i]) != VK_SUCCESS) 
+		{
+			throw std::runtime_error("ERROR :: FAILED TO CREATE IMAGE VIEWS FOR SWAP CHAIN IMAGES ");
+		}
+
+	}
 }
 
 bool VRender::GLFWsetter()
