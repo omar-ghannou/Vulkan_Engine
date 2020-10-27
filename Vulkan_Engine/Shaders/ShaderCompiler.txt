@@ -1,5 +1,0 @@
-set /p VS= Enter the name of the vertex shader (with extension) : 
-set /p FS= Enter the name of the fragment shader (with extension): 
-
-echo %VS%
-echo %%~nVS

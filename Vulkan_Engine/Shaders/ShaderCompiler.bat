@@ -6,11 +6,11 @@ setlocal enabledelayedexpansion
 
 echo processing %VS% :
 for /f "tokens=1 delims=." %%a in ("%VS%") do (
-  glslc %VS% -o %%aVert.spv
+  glslc %VS% -o SPIR-V/%%aVert.spv
   )
 echo processing %FS% :
 for /f "tokens=1 delims=." %%a in ("%FS%") do (
-  glslc %FS% -o %%aFrag.spv
+  glslc %FS% -o SPIR-V/%%aFrag.spv
   )
 
 
