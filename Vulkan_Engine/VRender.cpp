@@ -3,6 +3,7 @@
 Vulkan_Engine::VRender::VRender()
 {
 	pattern = DEVICE_PICKING_UP_PATTERN::USE_FIRST_SUITABLE_DEVICE;
+	HConsole = GetStdHandle(STD_OUTPUT_HANDLE);
 
 	//ShowWindow(GetConsoleWindow(), SW_HIDE);
 	VulkanLoadingStatus[VULKAN_LOADING] = Initiliazer();
@@ -16,6 +17,7 @@ Vulkan_Engine::VRender::VRender()
 	CreateLogicalDevice();
 	CreateSwapChain();
 	CreateImageView();
+	CreateGraphicsPipeline();
 }
 
 Vulkan_Engine::VRender::~VRender()
@@ -52,7 +54,10 @@ bool Vulkan_Engine::VRender::CheckValidationLayerSupport()
 	VK_AvailableValidationLayers.resize(LayersCount);
 	vkEnumerateInstanceLayerProperties(&LayersCount, VK_AvailableValidationLayers.data());
 
+	SetConsoleTextAttribute(HConsole, 14);
 	std::cout << "vulkan available validation layer\n\n";
+	SetConsoleTextAttribute(HConsole, 15);
+
 	for (auto& LayerProperties : VK_AvailableValidationLayers) {
 		std::cout << LayerProperties.layerName << '\t' << LayerProperties.description << '\t' << LayerProperties.implementationVersion << '\n';
 	}
@@ -75,7 +80,9 @@ bool Vulkan_Engine::VRender::CheckValidationLayerSupport()
 bool Vulkan_Engine::VRender::ValidationState()
 {
 	if (enableValidationLayers) {
-		std::cout << "Debug Mode enabled\n\n";
+		SetConsoleTextAttribute(HConsole, 6);
+		std::cout << "Debug Mode : Enabled\n\n";
+		SetConsoleTextAttribute(HConsole, 15);
 		return CheckValidationLayerSupport();
 	}
 	return true;
@@ -97,7 +104,9 @@ void Vulkan_Engine::VRender::SetupDebugMessenger()
 
 
 	if (CreateDebugUtilsMessengerEXT(VK_Instance, &VK_Messenger_CreateInfo, nullptr, &debugMessenger) != VK_SUCCESS) {
+		SetConsoleTextAttribute(HConsole, 12);
 		throw std::runtime_error("ERROR :: Failed to set up debug messenger");
+		SetConsoleTextAttribute(HConsole, 15);
 	}
 
 
@@ -106,7 +115,9 @@ void Vulkan_Engine::VRender::SetupDebugMessenger()
 bool Vulkan_Engine::VRender::CheckExtensionsBeforeInstance()
 {
 	uint32_t VK_ExtensionsCount;
+	SetConsoleTextAttribute(HConsole, 14);
 	std::cout << "Vulkan extensions \n\n";
+	SetConsoleTextAttribute(HConsole, 15);
 	vkEnumerateInstanceExtensionProperties(nullptr, &VK_ExtensionsCount, nullptr);
 	VK_Available_Extensions.resize(VK_ExtensionsCount);
 	if (vkEnumerateInstanceExtensionProperties(nullptr, &VK_ExtensionsCount, VK_Available_Extensions.data()) != VK_SUCCESS) return false;
@@ -155,7 +166,9 @@ void Vulkan_Engine::VRender::PickPhysicalDevice(VkQueueFlagBits bit)
 	uint32_t devices_count = 0;
 	vkEnumeratePhysicalDevices(VK_Instance, &devices_count, nullptr);
 	if (!devices_count) {
+		SetConsoleTextAttribute(HConsole, 12);
 		throw std::runtime_error("ERROR :: CANNOT FIND ANY GPU THAT SUPPORTS VULKAN");
+		SetConsoleTextAttribute(HConsole, 15);
 	}
 	VK_Phy_Devices.resize(devices_count);
 	vkEnumeratePhysicalDevices(VK_Instance, &devices_count, VK_Phy_Devices.data());
@@ -177,7 +190,10 @@ void Vulkan_Engine::VRender::PickPhysicalDevice(VkQueueFlagBits bit)
 			vkGetPhysicalDeviceProperties(PhysicalDevice, &VK_Phy_Device_Properties);
 			vkGetPhysicalDeviceFeatures(PhysicalDevice, &VK_Phy_Device_Features);
 
+			SetConsoleTextAttribute(HConsole, 14);
 			std::cout << "\nphysical device extensions : \n";
+			SetConsoleTextAttribute(HConsole, 15);
+
 			for (const auto& extension : VK_Available_Device_Extensions) {
 				std::cout << extension.extensionName << '\t' << extension.specVersion << '\n';
 			}
@@ -185,7 +201,9 @@ void Vulkan_Engine::VRender::PickPhysicalDevice(VkQueueFlagBits bit)
 		}
 		else
 		{
+			SetConsoleTextAttribute(HConsole, 12);
 			throw std::runtime_error("ERROR :: CANNOT FIND A SUITABLE GPU FOR THE APPLICATION IN THIS DEVICE");
+			SetConsoleTextAttribute(HConsole, 15);
 		}
 	}
 
@@ -196,7 +214,11 @@ void Vulkan_Engine::VRender::PickPhysicalDevice(VkQueueFlagBits bit)
 			if (isDeviceSuitable(device,bit)) {
 				PhysicalDevice = device;
 				VK_Phy_Device_QueueFamilies = FindQueueFamilies(device);
+
+				SetConsoleTextAttribute(HConsole, 14);
 				std::cout << "\n\nPhysical device extensions : \n\n";
+				SetConsoleTextAttribute(HConsole, 15);
+
 				for (const auto& extension : VK_Available_Device_Extensions) {
 					std::cout << extension.extensionName << '\t' << extension.specVersion << '\n';
 				}
@@ -205,7 +227,9 @@ void Vulkan_Engine::VRender::PickPhysicalDevice(VkQueueFlagBits bit)
 		}
 
 		if (PhysicalDevice == VK_NULL_HANDLE) {
+			SetConsoleTextAttribute(HConsole, 12);
 			throw std::runtime_error("ERROR :: CANNOT FIND A SUITABLE GPU FOR THE APPLICATION IN THIS DEVICE");
+			SetConsoleTextAttribute(HConsole, 15);
 		}
 	}
 
@@ -341,11 +365,20 @@ void Vulkan_Engine::VRender::CreateLogicalDevice()
 	else DeviceCreateInfo.enabledLayerCount = 0;
 
 	if (vkCreateDevice(PhysicalDevice, &DeviceCreateInfo, nullptr, &LogicalDevice) != VK_SUCCESS)
+	{
+		SetConsoleTextAttribute(HConsole, 12);
 		throw std::runtime_error("ERROR :: FAILD TO CREATE A LOGICAL DEVICE FROM THE PHYSICAL GPU");
+		SetConsoleTextAttribute(HConsole, 15);
+	}
 
 	vkGetDeviceQueue(LogicalDevice, indices.GraphicsFamily.value(), 0, &VK_GraphicsQueue);
 	vkGetDeviceQueue(LogicalDevice, indices.PresentFamily.value(), 0, &VK_PresentQueue);
-	if (VK_GraphicsQueue == VK_PresentQueue) std::cout << "\nThe graphics and present queues are same\n";
+	if (VK_GraphicsQueue == VK_PresentQueue)
+	{
+		SetConsoleTextAttribute(HConsole, 6);
+		std::cout << "\nThe graphics and present queues are same\n";
+		SetConsoleTextAttribute(HConsole, 15);
+	}
 }
 
 void Vulkan_Engine::VRender::CreateSurface()
@@ -362,7 +395,9 @@ void Vulkan_Engine::VRender::CreateSurface()
 	//it does not need to be loaded explicitly
 	if (vkCreateWin32SurfaceKHR(VK_Instance, &VK_Surface_CreateInfo, nullptr, &VK_Surface) != VK_SUCCESS) 
 	{
+		SetConsoleTextAttribute(HConsole, 12);
 		throw std::runtime_error("ERROR :: FAILED TO CREATE A SURFACE ON YOUR WINDOWING SYSTEM");
+		SetConsoleTextAttribute(HConsole, 15);
 	}
 
 }
@@ -473,7 +508,9 @@ void Vulkan_Engine::VRender::CreateSwapChain()
 
 	if (vkCreateSwapchainKHR(LogicalDevice, &VK_SwapChain_createInfo, nullptr, &VK_SwapChain) != VK_SUCCESS)
 	{
+		SetConsoleTextAttribute(HConsole, 12);
 		throw std::runtime_error("ERROR :: FAILED TO CREATE A SWAP CHAIN FOR THE SURFACE");
+		SetConsoleTextAttribute(HConsole, 15);
 	}
 
 	vkGetSwapchainImagesKHR(LogicalDevice, VK_SwapChain, &imageCount, nullptr);
@@ -507,10 +544,41 @@ void Vulkan_Engine::VRender::CreateImageView()
 
 		if (vkCreateImageView(LogicalDevice, &ImageView_create_info, nullptr, &SwapChainImageViews[i]) != VK_SUCCESS) 
 		{
+			SetConsoleTextAttribute(HConsole, 12);
 			throw std::runtime_error("ERROR :: FAILED TO CREATE IMAGE VIEWS FOR SWAP CHAIN IMAGES ");
+			SetConsoleTextAttribute(HConsole, 15);
 		}
 
 	}
+}
+
+void Vulkan_Engine::VRender::CreateGraphicsPipeline()
+{
+	std::map<std::string, std::vector<char>>::reverse_iterator it = shaders.rbegin();
+	std::vector<char> source[2];
+	LoadShaderSource("Shaders/PrimitiveShader.vert", source[0]);
+	shaders.insert(std::pair<std::string, std::vector<char>>("Shaders/PrimitiveShader.vert", source[0]));
+
+	LoadShaderSource("Shaders/PrimitiveShader.frag", source[1]);
+	shaders.insert(std::pair<std::string, std::vector<char>>("Shaders/PrimitiveShader.frag", source[1]));
+
+	SetConsoleTextAttribute(HConsole, 14);
+	std::cout << "\n\nShaders map contains:\n\n";
+	SetConsoleTextAttribute(HConsole, 11);
+
+	
+
+	for (it = shaders.rbegin(); it != shaders.rend(); ++it)
+	{
+		SetConsoleTextAttribute(HConsole, 9);
+		std::cout << it->first << " \n\n ";
+		SetConsoleTextAttribute(HConsole, 11);
+		for (auto x : it->second) {
+			std::cout << x;
+		}
+		std::cout << '\n' << std::endl;
+	}
+	SetConsoleTextAttribute(HConsole, 15);
 }
 
 bool Vulkan_Engine::VRender::GLFWsetter()
@@ -586,7 +654,9 @@ void Vulkan_Engine::VRender::CreateInstance()
 	PrintGLFWExtensions(VK_Extensions);
 
 	if (static_cast<VkResult>(vkCreateInstance(&VK_CreateInfo, nullptr, &VK_Instance)) != VK_SUCCESS) {
+			SetConsoleTextAttribute(HConsole, 12);
 			throw std::runtime_error("ERROR :: Failed to create a vulkan instance");
+			SetConsoleTextAttribute(HConsole, 15);
 	}
 
 
@@ -597,7 +667,9 @@ void Vulkan_Engine::VRender::Render()
 	for (size_t test_index = 0; test_index < (sizeof(VulkanLoadingStatus) / sizeof(VulkanLoadingStatus[0])); test_index++)
 	{
 		if (VulkanLoadingStatus[test_index] == TEST_FAILD) {
+			SetConsoleTextAttribute(HConsole, 12);
 			std::cout << "\nERROR :: Failed to Load the render successfully. Please check " << GetErrorName(test_index) << std::endl;
+			SetConsoleTextAttribute(HConsole, 15);
 			return;
 		}
 	}
@@ -631,8 +703,107 @@ std::string Vulkan_Engine::VRender::GetErrorName(size_t index)
 
 void Vulkan_Engine::VRender::PrintGLFWExtensions(std::vector<const char*> vec)
 {
+	SetConsoleTextAttribute(HConsole, 14);
 	std::cout << "\n\nGLFW Vulkan required extensions \n\n";
+	SetConsoleTextAttribute(HConsole, 15);
+
 	for (auto& vec_element : vec) {
 		std::cout << vec_element << '\n';
 	}
+}
+
+bool Vulkan_Engine::VRender::LoadShaderSource(const char* path, std::string& src, int majorVersion, int minorVersion)
+{
+	std::ifstream shaderFile;
+	shaderFile.open(path, std::ios::in | std::ios::binary);
+
+	if (!shaderFile.is_open()) {
+		std::string errorMessage = "ERROR :: COULD NOT LOAD THE FILE : ";
+		errorMessage.append(path);
+		SetConsoleTextAttribute(HConsole, 12);
+		throw std::runtime_error(errorMessage);
+		SetConsoleTextAttribute(HConsole, 15);
+		return false;
+	}
+	//std::cout << "\n\nSource code of : " << path << '\n\n';
+
+	std::string ver = "#version ";
+	char v[3] = {'1','2','0'};
+	_itoa_s(majorVersion * 100 + minorVersion * 10, v, 10);
+	ver.append(v,3);
+
+	while (!shaderFile.eof()) {
+		char line[256];
+		shaderFile.getline(line,256);
+		if (line[0] == '#' && line[1] == 'v' && line[2] == 'e')
+		{
+			src.append(ver);
+		}
+		else
+			src.append(line);
+		//std::cout << line << '\n';
+	}
+
+	shaderFile.close();
+
+	return true;
+}
+
+bool Vulkan_Engine::VRender::LoadShaderSource(const char* path, std::vector<char>& src)
+{
+	std::ifstream shaderFile;
+	shaderFile.open(path, std::ios::in | std::ios::binary | std::ios::ate);
+
+	if (!shaderFile.is_open()) {
+		std::string errorMessage = "ERROR :: COULD NOT LOAD THE FILE : ";
+		errorMessage.append(path);
+		SetConsoleTextAttribute(HConsole, 12);
+		throw std::runtime_error(errorMessage);
+		SetConsoleTextAttribute(HConsole, 15);
+		return false;
+	}
+
+	size_t fileSize = (size_t)shaderFile.tellg();
+	src.resize(fileSize);
+
+	shaderFile.seekg(shaderFile._Seekbeg);
+	shaderFile.read(src.data(), fileSize);
+
+	shaderFile.close();
+
+	return true;
+
+}
+
+bool Vulkan_Engine::VRender::LoadShaderSource(const char* path, std::vector<char>& src, int majorVersion, int minorVersion)
+{
+	std::ifstream shaderFile;
+	shaderFile.open(path, std::ios::in | std::ios::binary | std::ios::ate);
+
+	if (!shaderFile.is_open()) {
+		std::string errorMessage = "ERROR :: COULD NOT LOAD THE FILE : ";
+		errorMessage.append(path);
+		SetConsoleTextAttribute(HConsole, 12);
+		throw std::runtime_error(errorMessage);
+		SetConsoleTextAttribute(HConsole, 15);
+		return false;
+	}
+
+	//std::cout << "\n\nSource code of : " << path << '\n\n';
+
+	std::string ver = "#version ";
+	char v[3] = { '1','2','0' };
+	_itoa_s(majorVersion * 100 + minorVersion * 10, v, 10);
+	ver.append(v, 3);
+
+	size_t fileSize = (size_t)shaderFile.tellg();
+	src.resize(fileSize);
+
+	shaderFile.seekg(shaderFile._Seekbeg);
+	shaderFile.read(src.data(), fileSize);
+
+	shaderFile.close();
+
+	return true;
+
 }

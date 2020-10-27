@@ -30,6 +30,7 @@
 #include <set>
 #include <cstdint> //for UINT32_MAX
 #include <algorithm>
+#include <fstream>
 
 namespace Vulkan_Engine {
 
@@ -126,6 +127,9 @@ struct SwapChainSupportDetails
 		//SwapChain ImageViews
 		void CreateImageView();
 
+		//Graphics Pipline
+		void CreateGraphicsPipeline();
+
 		//first steps functions
 		bool GLFWsetter();
 		bool Initiliazer();
@@ -190,6 +194,9 @@ struct SwapChainSupportDetails
 		//SwapChain ImageViews
 		std::vector<VkImageView> SwapChainImageViews;
 
+		//shaders source codes
+		std::map<std::string,std::vector<char>> shaders;
+
 
 		//validation layers
 #ifdef NDEBUG
@@ -204,7 +211,8 @@ struct SwapChainSupportDetails
 		};
 		std::vector<VkLayerProperties> VK_AvailableValidationLayers;
 
-
+		//Console
+		HANDLE HConsole;
 
 	public:
 
@@ -213,6 +221,11 @@ struct SwapChainSupportDetails
 		std::string GetErrorName(size_t index);
 
 		void PrintGLFWExtensions(std::vector<const char*> vec);
+
+		bool LoadShaderSource(const char* path, std::string& src, int majorVersion, int minorVersion);
+
+		bool LoadShaderSource(const char* path, std::vector<char>& src);
+		bool LoadShaderSource(const char* path, std::vector<char>& src, int majorVersion, int minorVersion);
 
 	};
 
