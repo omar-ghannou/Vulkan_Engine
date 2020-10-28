@@ -376,7 +376,7 @@ void Vulkan_Engine::VRender::CreateLogicalDevice()
 	if (VK_GraphicsQueue == VK_PresentQueue)
 	{
 		SetConsoleTextAttribute(HConsole, 6);
-		std::cout << "\nThe graphics and present queues are same\n";
+		std::cout << "\nThe graphics and present queues are same\n\n";
 		SetConsoleTextAttribute(HConsole, 15);
 	}
 }
@@ -552,33 +552,84 @@ void Vulkan_Engine::VRender::CreateImageView()
 	}
 }
 
-void Vulkan_Engine::VRender::CreateGraphicsPipeline()
+void Vulkan_Engine::VRender::LoadCompileShaders()
 {
-	std::map<std::string, std::vector<char>>::reverse_iterator it = shaders.rbegin();
-	std::vector<char> source[2];
-	LoadShaderSource("Shaders/PrimitiveShader.vert", source[0]);
-	shaders.insert(std::pair<std::string, std::vector<char>>("Shaders/PrimitiveShader.vert", source[0]));
+	char chi = 'n';
+	std::cout << "Do you need to Load the shaders (y/n) : ";
+	std::cin >> chi;
+	if (chi == 'y' || chi == 'Y')
+	{
+		while (std::cin.get())
+		{
+			std::cout << "\nEnter the name of the shader(with extension), (quit) to quit: ";
+			std::string name;
+			std::cin >> name;
+			if (name == "quit") break;
+			std::cout << "Enter the type of the shader (vert/frag/tcs/tes/geom/comp) : ";
+			std::string type;
+			std::cin >> type;
+			char ch = 'n';
+			std::cout << "Do you need to compile/recompile the shader (y/n) : ";
+			std::cin >> ch;
+			if (ch == 'y' || ch == 'Y')
+			{
+				std::string command = "Shaders\\VulkanShaderCompiler.bat ";
+				command.append(name);
+				command.append(" ");
+				command.append(type);
+				system((const char*)command.c_str());
+			}
+			std::string path_to_glsl = "Shaders/";
+			std::string path_to_spirv = "Shaders/SPIR-V/";
+			std::vector<char> source[2];
+			path_to_glsl.append(name);
+			LoadShaderSource(path_to_glsl.c_str(), source[0]);
+			std::string::size_type pos = name.find('.');
+			std::string nameWEX = "";
+			if (pos != std::string::npos)
+			{
+				nameWEX = name.substr(0, pos);
+			}
+			path_to_spirv.append(nameWEX);
+			path_to_spirv.append(type);
+			path_to_spirv.append(".spv");
+			LoadShaderSource(path_to_spirv.c_str(), source[1]);
 
-	LoadShaderSource("Shaders/PrimitiveShader.frag", source[1]);
-	shaders.insert(std::pair<std::string, std::vector<char>>("Shaders/PrimitiveShader.frag", source[1]));
+			std::pair<std::vector<char>, std::vector<char>> GLSL_SPIRV_map;
+			std::pair pr = std::pair<std::vector<char>, std::vector<char>>(source[0], source[1]);
+			shaders.insert(std::pair<std::string, std::pair<std::vector<char>, std::vector<char>>>(name, pr));
+
+		}
+
+	}
+}
+
+void Vulkan_Engine::VRender::PrintShadersMap()
+{
+	std::map<std::string, std::pair<std::vector<char>, std::vector<char>>>::reverse_iterator it = shaders.rbegin();
 
 	SetConsoleTextAttribute(HConsole, 14);
 	std::cout << "\n\nShaders map contains:\n\n";
 	SetConsoleTextAttribute(HConsole, 11);
-
-	
 
 	for (it = shaders.rbegin(); it != shaders.rend(); ++it)
 	{
 		SetConsoleTextAttribute(HConsole, 9);
 		std::cout << it->first << " \n\n ";
 		SetConsoleTextAttribute(HConsole, 11);
-		for (auto x : it->second) {
+		for (auto x : it->second.first) {
 			std::cout << x;
 		}
+
 		std::cout << '\n' << std::endl;
 	}
 	SetConsoleTextAttribute(HConsole, 15);
+}
+
+void Vulkan_Engine::VRender::CreateGraphicsPipeline()
+{
+	LoadCompileShaders();
+	PrintShadersMap();
 }
 
 bool Vulkan_Engine::VRender::GLFWsetter()

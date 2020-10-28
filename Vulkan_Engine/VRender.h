@@ -127,6 +127,13 @@ struct SwapChainSupportDetails
 		//SwapChain ImageViews
 		void CreateImageView();
 
+		//Shaders Operations
+		bool LoadShaderSource(const char* path, std::string& src, int majorVersion, int minorVersion);
+		bool LoadShaderSource(const char* path, std::vector<char>& src);
+		bool LoadShaderSource(const char* path, std::vector<char>& src, int majorVersion, int minorVersion);
+		void LoadCompileShaders();
+		void PrintShadersMap();
+
 		//Graphics Pipline
 		void CreateGraphicsPipeline();
 
@@ -195,7 +202,8 @@ struct SwapChainSupportDetails
 		std::vector<VkImageView> SwapChainImageViews;
 
 		//shaders source codes
-		std::map<std::string,std::vector<char>> shaders;
+	
+		std::map<std::string,std::pair<std::vector<char>,std::vector<char>>> shaders;
 
 
 		//validation layers
@@ -221,11 +229,6 @@ struct SwapChainSupportDetails
 		std::string GetErrorName(size_t index);
 
 		void PrintGLFWExtensions(std::vector<const char*> vec);
-
-		bool LoadShaderSource(const char* path, std::string& src, int majorVersion, int minorVersion);
-
-		bool LoadShaderSource(const char* path, std::vector<char>& src);
-		bool LoadShaderSource(const char* path, std::vector<char>& src, int majorVersion, int minorVersion);
 
 	};
 
