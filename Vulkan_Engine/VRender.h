@@ -134,6 +134,9 @@ struct SwapChainSupportDetails
 		void LoadCompileShaders();
 		void PrintShadersMap();
 
+		//Shaders Modules
+		VkShaderModule CreateShaderModule(const char* ShaderName, const std::vector<char>& code);
+
 		//Graphics Pipline
 		void CreateGraphicsPipeline();
 
@@ -202,8 +205,10 @@ struct SwapChainSupportDetails
 		std::vector<VkImageView> SwapChainImageViews;
 
 		//shaders source codes
-	
 		std::map<std::string,std::pair<std::vector<char>,std::vector<char>>> shaders;
+
+		//Shaders Modules
+		std::vector<VkShaderModule> ShaderModules;
 
 
 		//validation layers

@@ -626,10 +626,44 @@ void Vulkan_Engine::VRender::PrintShadersMap()
 	SetConsoleTextAttribute(HConsole, 15);
 }
 
+VkShaderModule Vulkan_Engine::VRender::CreateShaderModule(const char* ShaderName,const std::vector<char>& code)
+{
+	VkShaderModuleCreateInfo createInfo{};
+	createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+	createInfo.codeSize = code.size();
+	createInfo.pCode = reinterpret_cast<const uint32_t *>(code.data());
+
+	VkShaderModule ShaderModule;
+
+	if (vkCreateShaderModule(LogicalDevice, &createInfo, nullptr, &ShaderModule) != VK_SUCCESS) {
+		SetConsoleTextAttribute(HConsole, 12);
+		std::string errorMessage = "ERROR :: FAILED TO CREATE SHADER MODULE FOR ";
+		errorMessage.append(ShaderName);
+		errorMessage.append(" Shader");
+		throw std::runtime_error(errorMessage);
+		SetConsoleTextAttribute(HConsole, 15);
+	}
+	return ShaderModule;
+}
+
 void Vulkan_Engine::VRender::CreateGraphicsPipeline()
 {
 	LoadCompileShaders();
 	PrintShadersMap();
+
+	for (const auto& x : shaders) 
+	{
+		ShaderModules.push_back(CreateShaderModule(x.first.c_str(), x.second.second));
+	}
+
+
+
+	for (auto& x : ShaderModules)
+		vkDestroyShaderModule(LogicalDevice, x, nullptr);
+
+	ShaderModules.~vector();
+
+
 }
 
 bool Vulkan_Engine::VRender::GLFWsetter()
