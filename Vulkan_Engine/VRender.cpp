@@ -656,6 +656,12 @@ void Vulkan_Engine::VRender::CreateGraphicsPipeline()
 		ShaderModules.push_back(CreateShaderModule(x.first.c_str(), x.second.second));
 	}
 
+	VkPipelineShaderStageCreateInfo shaderStageCreateInfo{};
+
+	shaderStageCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	shaderStageCreateInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+	shaderStageCreateInfo.module = ShaderModules[0];
+	shaderStageCreateInfo.pName = "main";
 
 
 	for (auto& x : ShaderModules)
