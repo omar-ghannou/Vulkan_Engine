@@ -656,13 +656,16 @@ void Vulkan_Engine::VRender::CreateGraphicsPipeline()
 		ShaderModules.push_back(CreateShaderModule(x.first.c_str(), x.second.second));
 	}
 
-	VkPipelineShaderStageCreateInfo shaderStageCreateInfo{};
+	shaderStageCreateInfos[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	shaderStageCreateInfos[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+	shaderStageCreateInfos[0].module = ShaderModules[1];
+	shaderStageCreateInfos[0].pName = "main";
 
-	shaderStageCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-	shaderStageCreateInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-	shaderStageCreateInfo.module = ShaderModules[0];
-	shaderStageCreateInfo.pName = "main";
-
+	shaderStageCreateInfos[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	shaderStageCreateInfos[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+	shaderStageCreateInfos[1].module = ShaderModules[0];
+	shaderStageCreateInfos[1].pName = "main";
+	
 
 	for (auto& x : ShaderModules)
 		vkDestroyShaderModule(LogicalDevice, x, nullptr);

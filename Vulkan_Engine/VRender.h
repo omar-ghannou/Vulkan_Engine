@@ -210,6 +210,8 @@ struct SwapChainSupportDetails
 		//Shaders Modules
 		std::vector<VkShaderModule> ShaderModules;
 
+		//Shader Stages Creation Info
+		VkPipelineShaderStageCreateInfo shaderStageCreateInfos[6];
 
 		//validation layers
 #ifdef NDEBUG
