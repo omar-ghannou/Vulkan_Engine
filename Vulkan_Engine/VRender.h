@@ -213,6 +213,8 @@ struct SwapChainSupportDetails
 		//Shader Stages Creation Info
 		VkPipelineShaderStageCreateInfo shaderStageCreateInfos[6];
 
+		//
+
 		//validation layers
 #ifdef NDEBUG
 		const bool enableValidationLayers = false;

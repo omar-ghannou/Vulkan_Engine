@@ -656,6 +656,7 @@ void Vulkan_Engine::VRender::CreateGraphicsPipeline()
 		ShaderModules.push_back(CreateShaderModule(x.first.c_str(), x.second.second));
 	}
 
+	//shaders - programmable
 	shaderStageCreateInfos[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 	shaderStageCreateInfos[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
 	shaderStageCreateInfos[0].module = ShaderModules[1];
@@ -665,6 +666,20 @@ void Vulkan_Engine::VRender::CreateGraphicsPipeline()
 	shaderStageCreateInfos[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
 	shaderStageCreateInfos[1].module = ShaderModules[0];
 	shaderStageCreateInfos[1].pName = "main";
+
+	//Fixed functions
+
+	//Vertex input state
+	VkPipelineVertexInputStateCreateInfo VertexInputInfo{};
+	VertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+	VertexInputInfo.vertexBindingDescriptionCount = 0;
+	VertexInputInfo.pVertexBindingDescriptions = nullptr;
+	VertexInputInfo.vertexAttributeDescriptionCount = 0;
+	VertexInputInfo.pVertexAttributeDescriptions = nullptr;
+
+	//Input assembly
+
+
 	
 
 	for (auto& x : ShaderModules)
