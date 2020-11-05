@@ -678,9 +678,11 @@ void Vulkan_Engine::VRender::CreateGraphicsPipeline()
 	VertexInputInfo.pVertexAttributeDescriptions = nullptr;
 
 	//Input assembly
+	VkPipelineInputAssemblyStateCreateInfo InputAssembly{};
+	InputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+	InputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	InputAssembly.primitiveRestartEnable = VK_FALSE;
 
-
-	
 
 	for (auto& x : ShaderModules)
 		vkDestroyShaderModule(LogicalDevice, x, nullptr);
