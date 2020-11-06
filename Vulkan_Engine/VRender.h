@@ -213,7 +213,22 @@ struct SwapChainSupportDetails
 		//Shader Stages Creation Info
 		VkPipelineShaderStageCreateInfo shaderStageCreateInfos[6];
 
-		//
+		//Fixed Functions State Creation Info
+
+		//Vertex input state
+		VkPipelineVertexInputStateCreateInfo VertexInputInfo{};
+
+		//Input assembly
+		VkPipelineInputAssemblyStateCreateInfo InputAssembly{};
+
+		//Viewport
+		VkViewport viewport{};
+
+		//Scissor
+		VkRect2D scissor{};
+
+		//Viewport & Scissor
+		VkPipelineViewportStateCreateInfo ViewportState{};
 
 		//validation layers
 #ifdef NDEBUG

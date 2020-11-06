@@ -670,7 +670,6 @@ void Vulkan_Engine::VRender::CreateGraphicsPipeline()
 	//Fixed functions
 
 	//Vertex input state
-	VkPipelineVertexInputStateCreateInfo VertexInputInfo{};
 	VertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 	VertexInputInfo.vertexBindingDescriptionCount = 0;
 	VertexInputInfo.pVertexBindingDescriptions = nullptr;
@@ -678,10 +677,30 @@ void Vulkan_Engine::VRender::CreateGraphicsPipeline()
 	VertexInputInfo.pVertexAttributeDescriptions = nullptr;
 
 	//Input assembly
-	VkPipelineInputAssemblyStateCreateInfo InputAssembly{};
 	InputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
 	InputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 	InputAssembly.primitiveRestartEnable = VK_FALSE;
+
+	//Viewport
+	viewport.x = 0;
+	viewport.y = 0;
+	viewport.width = extent.width;
+	viewport.height = extent.height;
+	viewport.minDepth = 0.0f;
+	viewport.maxDepth = 1.0f;
+
+	//Scissor
+	scissor.offset = { 0,0 };
+	scissor.extent = extent;
+
+	//Viewport State
+	//in case of multi-viewport we need to enable this feature in the GPU (if supported) through the logical device, uncomment the next line to enable it.
+	//VK_Phy_Device_Features.multiViewport = VK_TRUE; 
+	ViewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+	ViewportState.viewportCount = 1;
+	ViewportState.pViewports = &viewport;
+	ViewportState.scissorCount = 1;
+	ViewportState.pScissors = &scissor;
 
 
 	for (auto& x : ShaderModules)
