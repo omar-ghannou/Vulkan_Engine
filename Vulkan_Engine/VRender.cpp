@@ -702,6 +702,19 @@ void Vulkan_Engine::VRender::CreateGraphicsPipeline()
 	ViewportState.scissorCount = 1;
 	ViewportState.pScissors = &scissor;
 
+	//Rasterizer
+	Rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+	Rasterizer.depthClampEnable = VK_FALSE;
+	Rasterizer.rasterizerDiscardEnable = VK_FALSE; // always discard the geometry through the rasterizer if it set to true
+	Rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
+	Rasterizer.lineWidth = 1.0f;
+	Rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+	Rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+	Rasterizer.depthBiasEnable = VK_FALSE;
+	Rasterizer.depthBiasConstantFactor = 0.0f;
+	Rasterizer.depthBiasClamp = 0.0f;
+	Rasterizer.depthBiasSlopeFactor = 0.0f;
+
 
 	for (auto& x : ShaderModules)
 		vkDestroyShaderModule(LogicalDevice, x, nullptr);

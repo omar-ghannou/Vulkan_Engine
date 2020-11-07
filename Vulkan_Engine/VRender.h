@@ -230,6 +230,9 @@ struct SwapChainSupportDetails
 		//Viewport & Scissor
 		VkPipelineViewportStateCreateInfo ViewportState{};
 
+		//Rasterizer
+		VkPipelineRasterizationStateCreateInfo Rasterizer{};
+
 		//validation layers
 #ifdef NDEBUG
 		const bool enableValidationLayers = false;
