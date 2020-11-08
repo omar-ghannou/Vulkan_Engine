@@ -233,6 +233,9 @@ struct SwapChainSupportDetails
 		//Rasterizer
 		VkPipelineRasterizationStateCreateInfo Rasterizer{};
 
+		//Multisampling
+		VkPipelineMultisampleStateCreateInfo multisampling{};
+
 		//validation layers
 #ifdef NDEBUG
 		const bool enableValidationLayers = false;
