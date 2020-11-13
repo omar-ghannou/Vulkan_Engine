@@ -236,6 +236,27 @@ struct SwapChainSupportDetails
 		//Multisampling
 		VkPipelineMultisampleStateCreateInfo multisampling{};
 
+		//Depth & Stencil testing
+		VkPipelineDepthStencilStateCreateInfo DepthStencil{};
+
+		//Color Blending Attachment
+		VkPipelineColorBlendAttachmentState ColorBlendAttachment{};
+
+		//Color Blending State
+		VkPipelineColorBlendStateCreateInfo ColorBlending{};
+
+		//Dynamic State
+		VkDynamicState DynamicStates[4] = {
+			VK_DYNAMIC_STATE_VIEWPORT,
+			VK_DYNAMIC_STATE_LINE_WIDTH,
+			VK_DYNAMIC_STATE_BLEND_CONSTANTS,
+			VK_DYNAMIC_STATE_FRONT_FACE_EXT
+		};
+		VkPipelineDynamicStateCreateInfo DynamicState{};
+
+		//Pipeline Layout
+		VkPipelineLayout PipelineLayout;
+
 		//validation layers
 #ifdef NDEBUG
 		const bool enableValidationLayers = false;

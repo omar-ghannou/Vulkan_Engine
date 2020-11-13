@@ -725,6 +725,32 @@ void Vulkan_Engine::VRender::CreateGraphicsPipeline()
 	multisampling.alphaToCoverageEnable = VK_FALSE;
 	multisampling.alphaToOneEnable = VK_FALSE;
 
+	//Color Blending Attachment
+	ColorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+	ColorBlendAttachment.blendEnable = VK_TRUE;
+	ColorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+	ColorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_DST_ALPHA;
+	ColorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
+	ColorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+	ColorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+	ColorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
+
+	//Color Blending State
+	ColorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+	ColorBlending.logicOpEnable = VK_FALSE;
+	ColorBlending.logicOp = VK_LOGIC_OP_COPY;
+	ColorBlending.attachmentCount = 1;
+	ColorBlending.pAttachments = &ColorBlendAttachment;
+	ColorBlending.blendConstants[0] = 0.0f;
+	ColorBlending.blendConstants[1] = 0.0f;
+	ColorBlending.blendConstants[2] = 0.0f;
+	ColorBlending.blendConstants[3] = 0.0f;
+
+	//Dynamic States
+	DynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+	DynamicState.dynamicStateCount = 4;
+	DynamicState.pDynamicStates = DynamicStates;
+
 
 	for (auto& x : ShaderModules)
 		vkDestroyShaderModule(LogicalDevice, x, nullptr);
