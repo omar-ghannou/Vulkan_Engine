@@ -22,6 +22,7 @@ Vulkan_Engine::VRender::VRender()
 
 Vulkan_Engine::VRender::~VRender()
 {
+	vkDestroyPipelineLayout(LogicalDevice, PipelineLayout, nullptr);
 	for (auto& ImageView : SwapChainImageViews) {
 		vkDestroyImageView(LogicalDevice, ImageView, nullptr);
 	}
@@ -602,6 +603,11 @@ void Vulkan_Engine::VRender::LoadCompileShaders()
 		}
 
 	}
+	else {
+		SetConsoleTextAttribute(HConsole, 12);
+		throw std::runtime_error("PROGRAM HAS BEEN STOPED :: THE SHADERS ARE NOT LOADED");
+		SetConsoleTextAttribute(HConsole, 15);
+	}
 }
 
 void Vulkan_Engine::VRender::PrintShadersMap()
@@ -751,6 +757,18 @@ void Vulkan_Engine::VRender::CreateGraphicsPipeline()
 	DynamicState.dynamicStateCount = 4;
 	DynamicState.pDynamicStates = DynamicStates;
 
+	//Pipeline Layout
+	PipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	PipelineLayoutCreateInfo.setLayoutCount = 0;
+	PipelineLayoutCreateInfo.pSetLayouts = nullptr;
+	PipelineLayoutCreateInfo.pushConstantRangeCount = 0;
+	PipelineLayoutCreateInfo.pPushConstantRanges = nullptr;
+
+	if (vkCreatePipelineLayout(LogicalDevice, &PipelineLayoutCreateInfo, nullptr, &PipelineLayout) != VK_SUCCESS) {
+		SetConsoleTextAttribute(HConsole, 12);
+		throw std::runtime_error("ERROR :: Failed to create the pipeline layout");
+		SetConsoleTextAttribute(HConsole, 15);
+	}
 
 	for (auto& x : ShaderModules)
 		vkDestroyShaderModule(LogicalDevice, x, nullptr);

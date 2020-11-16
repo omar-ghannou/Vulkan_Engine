@@ -256,6 +256,7 @@ struct SwapChainSupportDetails
 
 		//Pipeline Layout
 		VkPipelineLayout PipelineLayout;
+		VkPipelineLayoutCreateInfo PipelineLayoutCreateInfo{};
 
 		//validation layers
 #ifdef NDEBUG

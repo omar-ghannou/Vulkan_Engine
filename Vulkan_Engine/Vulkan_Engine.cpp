@@ -4,12 +4,14 @@
 
 int main()
 {
+    HANDLE HConsole = GetStdHandle(STD_OUTPUT_HANDLE);
     try {
         Vulkan_Engine::VRender render;
         render.Render();
     }
     catch (std::exception& e) {
         std::cout << '\n' << e.what() << '\n';
+        SetConsoleTextAttribute(HConsole, 15);
     }
 
     return 0;
