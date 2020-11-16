@@ -137,6 +137,9 @@ struct SwapChainSupportDetails
 		//Shaders Modules
 		VkShaderModule CreateShaderModule(const char* ShaderName, const std::vector<char>& code);
 
+		//Render Passes
+		void CreateRenderPass();
+
 		//Graphics Pipline
 		void CreateGraphicsPipeline();
 

@@ -17,6 +17,7 @@ Vulkan_Engine::VRender::VRender()
 	CreateLogicalDevice();
 	CreateSwapChain();
 	CreateImageView();
+	CreateRenderPass();
 	CreateGraphicsPipeline();
 }
 
@@ -650,6 +651,11 @@ VkShaderModule Vulkan_Engine::VRender::CreateShaderModule(const char* ShaderName
 		SetConsoleTextAttribute(HConsole, 15);
 	}
 	return ShaderModule;
+}
+
+void Vulkan_Engine::VRender::CreateRenderPass()
+{
+
 }
 
 void Vulkan_Engine::VRender::CreateGraphicsPipeline()

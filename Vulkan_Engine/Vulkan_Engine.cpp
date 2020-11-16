@@ -13,7 +13,6 @@ int main()
         std::cout << '\n' << e.what() << '\n';
         SetConsoleTextAttribute(HConsole, 15);
     }
-
     return 0;
 }
 
