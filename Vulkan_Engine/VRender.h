@@ -261,6 +261,10 @@ struct SwapChainSupportDetails
 		VkPipelineLayout PipelineLayout;
 		VkPipelineLayoutCreateInfo PipelineLayoutCreateInfo{};
 
+		//Render Passes
+		VkAttachmentDescription ColorAttachment{};
+
+
 		//validation layers
 #ifdef NDEBUG
 		const bool enableValidationLayers = false;
