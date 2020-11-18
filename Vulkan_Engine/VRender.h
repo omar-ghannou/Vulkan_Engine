@@ -267,7 +267,9 @@ struct SwapChainSupportDetails
 		VkAttachmentReference ColorAttachmentRef{};
 		//Subpasses
 		VkSubpassDescription subpass{};
-
+		//Render Pass -- need to be before VkPipelineLayout in a structure model
+		VkRenderPass RenderPass{};
+		VkRenderPassCreateInfo RenderPassCreateInfo{};
 
 
 		//validation layers

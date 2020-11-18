@@ -24,6 +24,7 @@ Vulkan_Engine::VRender::VRender()
 Vulkan_Engine::VRender::~VRender()
 {
 	vkDestroyPipelineLayout(LogicalDevice, PipelineLayout, nullptr);
+	vkDestroyRenderPass(LogicalDevice, RenderPass, nullptr);
 	for (auto& ImageView : SwapChainImageViews) {
 		vkDestroyImageView(LogicalDevice, ImageView, nullptr);
 	}
@@ -674,6 +675,18 @@ void Vulkan_Engine::VRender::CreateRenderPass()
 	subpass.colorAttachmentCount = 1;
 	subpass.pColorAttachments = &ColorAttachmentRef;
 
+	//Render Pass
+	RenderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+	RenderPassCreateInfo.attachmentCount = 1;
+	RenderPassCreateInfo.pAttachments = &ColorAttachment;
+	RenderPassCreateInfo.subpassCount = 1;
+	RenderPassCreateInfo.pSubpasses = &subpass;
+
+	if (vkCreateRenderPass(LogicalDevice, &RenderPassCreateInfo, nullptr, &RenderPass) != VK_SUCCESS) {
+		SetConsoleTextAttribute(HConsole, 12);
+		throw std::runtime_error("ERROR :: FAILED TO CREATE RENDER PASSES");
+		SetConsoleTextAttribute(HConsole, 15);
+	}
 
 }
 
@@ -788,6 +801,7 @@ void Vulkan_Engine::VRender::CreateGraphicsPipeline()
 	PipelineLayoutCreateInfo.pSetLayouts = nullptr;
 	PipelineLayoutCreateInfo.pushConstantRangeCount = 0;
 	PipelineLayoutCreateInfo.pPushConstantRanges = nullptr;
+
 
 	if (vkCreatePipelineLayout(LogicalDevice, &PipelineLayoutCreateInfo, nullptr, &PipelineLayout) != VK_SUCCESS) {
 		SetConsoleTextAttribute(HConsole, 12);
