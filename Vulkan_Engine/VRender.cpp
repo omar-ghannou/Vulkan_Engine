@@ -655,6 +655,7 @@ VkShaderModule Vulkan_Engine::VRender::CreateShaderModule(const char* ShaderName
 
 void Vulkan_Engine::VRender::CreateRenderPass()
 {
+	//Attachment Description
 	ColorAttachment.format = format.format;
 	ColorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
 	ColorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
@@ -663,6 +664,17 @@ void Vulkan_Engine::VRender::CreateRenderPass()
 	ColorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 	ColorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	ColorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+	//Attachment Reference
+	ColorAttachmentRef.attachment = 0;
+	ColorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+	//Subpass
+	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+	subpass.colorAttachmentCount = 1;
+	subpass.pColorAttachments = &ColorAttachmentRef;
+
+
 }
 
 void Vulkan_Engine::VRender::CreateGraphicsPipeline()

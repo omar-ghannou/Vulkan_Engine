@@ -262,7 +262,12 @@ struct SwapChainSupportDetails
 		VkPipelineLayoutCreateInfo PipelineLayoutCreateInfo{};
 
 		//Render Passes
+		//Attachment
 		VkAttachmentDescription ColorAttachment{};
+		VkAttachmentReference ColorAttachmentRef{};
+		//Subpasses
+		VkSubpassDescription subpass{};
+
 
 
 		//validation layers
