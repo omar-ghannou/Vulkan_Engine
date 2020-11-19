@@ -23,6 +23,7 @@ Vulkan_Engine::VRender::VRender()
 
 Vulkan_Engine::VRender::~VRender()
 {
+	vkDestroyPipeline(LogicalDevice, GraphicsPipeline, nullptr);
 	vkDestroyPipelineLayout(LogicalDevice, PipelineLayout, nullptr);
 	vkDestroyRenderPass(LogicalDevice, RenderPass, nullptr);
 	for (auto& ImageView : SwapChainImageViews) {
@@ -802,10 +803,36 @@ void Vulkan_Engine::VRender::CreateGraphicsPipeline()
 	PipelineLayoutCreateInfo.pushConstantRangeCount = 0;
 	PipelineLayoutCreateInfo.pPushConstantRanges = nullptr;
 
-
 	if (vkCreatePipelineLayout(LogicalDevice, &PipelineLayoutCreateInfo, nullptr, &PipelineLayout) != VK_SUCCESS) {
 		SetConsoleTextAttribute(HConsole, 12);
 		throw std::runtime_error("ERROR :: Failed to create the pipeline layout");
+		SetConsoleTextAttribute(HConsole, 15);
+	}
+
+	PipelineCreationInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+	PipelineCreationInfo.stageCount = 2;
+	PipelineCreationInfo.pStages = shaderStageCreateInfos;
+
+	PipelineCreationInfo.pVertexInputState = &VertexInputInfo;
+	PipelineCreationInfo.pInputAssemblyState = &InputAssembly;
+	PipelineCreationInfo.pViewportState = &ViewportState;
+	PipelineCreationInfo.pRasterizationState = &Rasterizer;
+	PipelineCreationInfo.pMultisampleState = &multisampling;
+	PipelineCreationInfo.pDepthStencilState = nullptr;
+	PipelineCreationInfo.pColorBlendState = &ColorBlending;
+	PipelineCreationInfo.pDynamicState = nullptr;
+	//PipelineCreationInfo.pDynamicState = &DynamicState;
+
+	PipelineCreationInfo.layout = PipelineLayout;
+	PipelineCreationInfo.renderPass = RenderPass;
+	PipelineCreationInfo.subpass = 0;
+
+	PipelineCreationInfo.basePipelineHandle = VK_NULL_HANDLE;
+	PipelineCreationInfo.basePipelineIndex = -1;
+
+	if (vkCreateGraphicsPipelines(LogicalDevice, VK_NULL_HANDLE, 1, &PipelineCreationInfo, nullptr, &GraphicsPipeline) != VK_SUCCESS) {
+		SetConsoleTextAttribute(HConsole, 12);
+		throw std::runtime_error("ERROR :: Failed to create the graphics pipeline");
 		SetConsoleTextAttribute(HConsole, 15);
 	}
 

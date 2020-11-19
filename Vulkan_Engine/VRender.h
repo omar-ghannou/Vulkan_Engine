@@ -271,6 +271,12 @@ struct SwapChainSupportDetails
 		VkRenderPass RenderPass{};
 		VkRenderPassCreateInfo RenderPassCreateInfo{};
 
+		//Graphics Pipeline Object
+		VkPipeline GraphicsPipeline;
+		VkGraphicsPipelineCreateInfo PipelineCreationInfo{};
+
+
+
 
 		//validation layers
 #ifdef NDEBUG
