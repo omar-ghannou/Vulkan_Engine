@@ -31,6 +31,7 @@
 #include <cstdint> //for UINT32_MAX
 #include <algorithm>
 #include <fstream>
+#include <sstream>
 
 namespace Vulkan_Engine {
 
@@ -142,6 +143,9 @@ struct SwapChainSupportDetails
 
 		//Graphics Pipline
 		void CreateGraphicsPipeline();
+
+		//Frame Buffers
+		void CreateFrameBuffers();
 
 		//first steps functions
 		bool GLFWsetter();
@@ -275,8 +279,9 @@ struct SwapChainSupportDetails
 		VkPipeline GraphicsPipeline;
 		VkGraphicsPipelineCreateInfo PipelineCreationInfo{};
 
-
-
+		//FrameBuffers
+		std::vector<VkFramebuffer> SwapChainFrameBuffers;
+		std::vector<VkFramebufferCreateInfo> FrameBuffersCreateInfo;
 
 		//validation layers
 #ifdef NDEBUG

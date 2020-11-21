@@ -19,10 +19,12 @@ Vulkan_Engine::VRender::VRender()
 	CreateImageView();
 	CreateRenderPass();
 	CreateGraphicsPipeline();
+	CreateFrameBuffers();
 }
 
 Vulkan_Engine::VRender::~VRender()
 {
+	for (auto& framebuffer : SwapChainFrameBuffers) vkDestroyFramebuffer(LogicalDevice, framebuffer, nullptr);
 	vkDestroyPipeline(LogicalDevice, GraphicsPipeline, nullptr);
 	vkDestroyPipelineLayout(LogicalDevice, PipelineLayout, nullptr);
 	vkDestroyRenderPass(LogicalDevice, RenderPass, nullptr);
@@ -842,6 +844,35 @@ void Vulkan_Engine::VRender::CreateGraphicsPipeline()
 	ShaderModules.~vector();
 
 
+}
+
+void Vulkan_Engine::VRender::CreateFrameBuffers()
+{
+	SwapChainFrameBuffers.resize(SwapChainImageViews.size());
+	FrameBuffersCreateInfo.resize(SwapChainImageViews.size());
+
+	for (size_t i = 0; i < SwapChainImageViews.size(); i++) {
+
+		VkImageView Attachments[] = { SwapChainImageViews[i] };
+		FrameBuffersCreateInfo[i].sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+		FrameBuffersCreateInfo[i].renderPass = RenderPass;
+		FrameBuffersCreateInfo[i].attachmentCount = 1;
+		FrameBuffersCreateInfo[i].pAttachments = Attachments;
+		FrameBuffersCreateInfo[i].width = extent.width;
+		FrameBuffersCreateInfo[i].height = extent.height;
+		FrameBuffersCreateInfo[i].layers = 1;
+
+		if (vkCreateFramebuffer(LogicalDevice, &FrameBuffersCreateInfo[i], nullptr, &SwapChainFrameBuffers[i]) != VK_SUCCESS) 
+		{
+			SetConsoleTextAttribute(HConsole, 12);
+			std::string error_message = "ERROR :: Failed to create the FrameBuffer at the ImageView number : ";
+			std::string tmp = std::to_string(i);
+			char const* num = tmp.c_str();
+			error_message.append(num);
+			throw std::runtime_error(error_message);
+			SetConsoleTextAttribute(HConsole, 15);
+		}
+	}
 }
 
 bool Vulkan_Engine::VRender::GLFWsetter()
