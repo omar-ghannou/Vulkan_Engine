@@ -147,6 +147,12 @@ struct SwapChainSupportDetails
 		//Frame Buffers
 		void CreateFrameBuffers();
 
+		//Command Pool
+		void CreateCommandPool();
+
+		//Command Buffers
+		void CreateCommandBuffers();
+
 		//first steps functions
 		bool GLFWsetter();
 		bool Initiliazer();
@@ -175,6 +181,7 @@ struct SwapChainSupportDetails
 		std::vector<VkQueueFamilyProperties> VK_Phy_Device_QueueFamilies;
 		VkQueue VK_GraphicsQueue;
 		VkQueue VK_PresentQueue;
+		QueueFamiliesIndices queueFamiliesindices;
 
 		//logical devices
 		VkDevice LogicalDevice;
@@ -282,6 +289,14 @@ struct SwapChainSupportDetails
 		//FrameBuffers
 		std::vector<VkFramebuffer> SwapChainFrameBuffers;
 		std::vector<VkFramebufferCreateInfo> FrameBuffersCreateInfo;
+
+		//Command Pool
+		VkCommandPool CommandPool;
+		VkCommandPoolCreateInfo CommandPoolCreateInfo{};
+
+		//Command Buffers
+		std::vector<VkCommandBuffer> CommandBuffers;
+		VkCommandBufferAllocateInfo CommandBufferAllocateInfo{};
 
 		//validation layers
 #ifdef NDEBUG

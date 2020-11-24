@@ -24,6 +24,7 @@ Vulkan_Engine::VRender::VRender()
 
 Vulkan_Engine::VRender::~VRender()
 {
+	vkDestroyCommandPool(LogicalDevice, CommandPool, nullptr);
 	for (auto& framebuffer : SwapChainFrameBuffers) vkDestroyFramebuffer(LogicalDevice, framebuffer, nullptr);
 	vkDestroyPipeline(LogicalDevice, GraphicsPipeline, nullptr);
 	vkDestroyPipelineLayout(LogicalDevice, PipelineLayout, nullptr);
@@ -332,10 +333,10 @@ Vulkan_Engine::QueueFamiliesIndices Vulkan_Engine::VRender::CheckForQueueFamily(
 
 void Vulkan_Engine::VRender::CreateLogicalDevice()
 {
-	QueueFamiliesIndices indices = CheckForQueueFamily(PhysicalDevice, VK_QUEUE_GRAPHICS_BIT, true);
+	queueFamiliesindices = CheckForQueueFamily(PhysicalDevice, VK_QUEUE_GRAPHICS_BIT, true);
 
 	std::vector<VkDeviceQueueCreateInfo> QueueCreateInfos;
-	std::set<uint32_t> UniqueQueueFamilies = { indices.GraphicsFamily.value(),indices.PresentFamily.value() };
+	std::set<uint32_t> UniqueQueueFamilies = { queueFamiliesindices.GraphicsFamily.value(),queueFamiliesindices.PresentFamily.value() };
 	float QueuePriority = 1.0f;
 	for (const auto& queue : UniqueQueueFamilies) {
 		VkDeviceQueueCreateInfo QueueCreateInfo{};
@@ -377,8 +378,8 @@ void Vulkan_Engine::VRender::CreateLogicalDevice()
 		SetConsoleTextAttribute(HConsole, 15);
 	}
 
-	vkGetDeviceQueue(LogicalDevice, indices.GraphicsFamily.value(), 0, &VK_GraphicsQueue);
-	vkGetDeviceQueue(LogicalDevice, indices.PresentFamily.value(), 0, &VK_PresentQueue);
+	vkGetDeviceQueue(LogicalDevice, queueFamiliesindices.GraphicsFamily.value(), 0, &VK_GraphicsQueue);
+	vkGetDeviceQueue(LogicalDevice, queueFamiliesindices.PresentFamily.value(), 0, &VK_PresentQueue);
 	if (VK_GraphicsQueue == VK_PresentQueue)
 	{
 		SetConsoleTextAttribute(HConsole, 6);
@@ -870,6 +871,51 @@ void Vulkan_Engine::VRender::CreateFrameBuffers()
 			char const* num = tmp.c_str();
 			error_message.append(num);
 			throw std::runtime_error(error_message);
+			SetConsoleTextAttribute(HConsole, 15);
+		}
+	}
+}
+
+void Vulkan_Engine::VRender::CreateCommandPool()
+{
+	//queueFamiliesindices
+	CommandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+	CommandPoolCreateInfo.queueFamilyIndex = queueFamiliesindices.GraphicsFamily.value();
+	CommandPoolCreateInfo.flags = 0;
+
+	if (vkCreateCommandPool(LogicalDevice, &CommandPoolCreateInfo, nullptr, &CommandPool) != VK_SUCCESS)
+	{
+		SetConsoleTextAttribute(HConsole, 12);
+		throw std::runtime_error("ERROR :: Failed to create the Command Pool");
+		SetConsoleTextAttribute(HConsole, 15);
+	}
+}
+
+void Vulkan_Engine::VRender::CreateCommandBuffers()
+{
+	CommandBuffers.resize(SwapChainFrameBuffers.size());
+
+	CommandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	CommandBufferAllocateInfo.commandPool = CommandPool;
+	CommandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	CommandBufferAllocateInfo.commandBufferCount = (uint32_t)CommandBuffers.size();
+
+	if (vkAllocateCommandBuffers(LogicalDevice, &CommandBufferAllocateInfo, CommandBuffers.data()) != VK_SUCCESS)
+	{
+		SetConsoleTextAttribute(HConsole, 12);
+		throw std::runtime_error("ERROR :: Failed to allocate the command buffers");
+		SetConsoleTextAttribute(HConsole, 15);
+	}
+
+	for (auto& commandbuffer : CommandBuffers) {
+		VkCommandBufferBeginInfo BeginInfo{};
+		BeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		BeginInfo.flags = 0;
+		BeginInfo.pInheritanceInfo = nullptr;
+
+		if (vkBeginCommandBuffer(commandbuffer, &BeginInfo) != VK_SUCCESS) {
+			SetConsoleTextAttribute(HConsole, 12);
+			throw std::runtime_error("ERROR :: Failed to begin a command buffer");
 			SetConsoleTextAttribute(HConsole, 15);
 		}
 	}
