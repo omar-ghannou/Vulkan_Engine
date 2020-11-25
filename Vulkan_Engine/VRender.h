@@ -298,6 +298,9 @@ struct SwapChainSupportDetails
 		std::vector<VkCommandBuffer> CommandBuffers;
 		VkCommandBufferAllocateInfo CommandBufferAllocateInfo{};
 
+		//Clear Values
+		VkClearValue BaseClearColor = { 0.0f,0.0f,0.0f,1.0f };
+
 		//validation layers
 #ifdef NDEBUG
 		const bool enableValidationLayers = false;

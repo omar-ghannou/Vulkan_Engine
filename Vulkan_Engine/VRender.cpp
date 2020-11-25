@@ -907,6 +907,7 @@ void Vulkan_Engine::VRender::CreateCommandBuffers()
 		SetConsoleTextAttribute(HConsole, 15);
 	}
 
+	size_t i = 0;
 	for (auto& commandbuffer : CommandBuffers) {
 		VkCommandBufferBeginInfo BeginInfo{};
 		BeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -918,6 +919,33 @@ void Vulkan_Engine::VRender::CreateCommandBuffers()
 			throw std::runtime_error("ERROR :: Failed to begin a command buffer");
 			SetConsoleTextAttribute(HConsole, 15);
 		}
+
+		VkRenderPassBeginInfo RenderPassBeginInfo{};
+		RenderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		RenderPassBeginInfo.renderPass = RenderPass;
+		RenderPassBeginInfo.framebuffer = SwapChainFrameBuffers[i];
+
+		RenderPassBeginInfo.renderArea.offset = { 0,0 };
+		RenderPassBeginInfo.renderArea.extent = extent;
+
+		VkClearValue ClearColor = BaseClearColor;
+
+		RenderPassBeginInfo.clearValueCount = 1;
+		RenderPassBeginInfo.pClearValues = &ClearColor;
+
+		vkCmdBeginRenderPass(commandbuffer, &RenderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+		vkCmdBindPipeline(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, GraphicsPipeline);
+		vkCmdDraw(commandbuffer, 3, 1, 0, 0);
+
+		vkCmdEndRenderPass(commandbuffer);
+
+		if (vkEndCommandBuffer(commandbuffer) != VK_SUCCESS) 
+		{
+			SetConsoleTextAttribute(HConsole, 12);
+			throw std::runtime_error("ERROR :: Failed to end a command buffer");
+			SetConsoleTextAttribute(HConsole, 15);
+		}
+		i++;
 	}
 }
 
