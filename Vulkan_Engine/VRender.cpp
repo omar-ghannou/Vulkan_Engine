@@ -24,6 +24,8 @@ Vulkan_Engine::VRender::VRender()
 
 Vulkan_Engine::VRender::~VRender()
 {
+	vkDestroySemaphore(LogicalDevice, RenderFinishedSemaphore, nullptr);
+	vkDestroySemaphore(LogicalDevice, ImageAvailableSemaphore, nullptr);
 	vkDestroyCommandPool(LogicalDevice, CommandPool, nullptr);
 	for (auto& framebuffer : SwapChainFrameBuffers) vkDestroyFramebuffer(LogicalDevice, framebuffer, nullptr);
 	vkDestroyPipeline(LogicalDevice, GraphicsPipeline, nullptr);
@@ -878,7 +880,7 @@ void Vulkan_Engine::VRender::CreateFrameBuffers()
 
 void Vulkan_Engine::VRender::CreateCommandPool()
 {
-	//queueFamiliesindices
+
 	CommandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 	CommandPoolCreateInfo.queueFamilyIndex = queueFamiliesindices.GraphicsFamily.value();
 	CommandPoolCreateInfo.flags = 0;
@@ -946,6 +948,48 @@ void Vulkan_Engine::VRender::CreateCommandBuffers()
 			SetConsoleTextAttribute(HConsole, 15);
 		}
 		i++;
+	}
+}
+
+void Vulkan_Engine::VRender::CreateSemaphores()
+{
+	VkSemaphoreCreateInfo SemaphoreCreateInfo{};
+	SemaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+	if (vkCreateSemaphore(LogicalDevice, &SemaphoreCreateInfo, nullptr, &ImageAvailableSemaphore) != VK_SUCCESS
+		|| vkCreateSemaphore(LogicalDevice, &SemaphoreCreateInfo, nullptr, &RenderFinishedSemaphore) != VK_SUCCESS) {
+		SetConsoleTextAttribute(HConsole, 12);
+		throw std::runtime_error("ERROR :: Failed to create the Semaphores");
+		SetConsoleTextAttribute(HConsole, 15);
+	}
+}
+
+void Vulkan_Engine::VRender::DrawFrame()
+{
+	uint32_t imageIndex;
+	vkAcquireNextImageKHR(LogicalDevice, VK_SwapChain, UINT64_MAX, ImageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+
+	VkSubmitInfo SubmitInfo{};
+	SubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+	VkSemaphore waitSemaphores[] = {ImageAvailableSemaphore};
+	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+
+	SubmitInfo.waitSemaphoreCount = 1;
+	SubmitInfo.pWaitSemaphores = waitSemaphores;
+	SubmitInfo.pWaitDstStageMask = waitStages;
+
+	SubmitInfo.commandBufferCount = 1;
+	SubmitInfo.pCommandBuffers = &CommandBuffers[imageIndex];
+
+	VkSemaphore signalSemaphores[] = { RenderFinishedSemaphore };
+	SubmitInfo.signalSemaphoreCount = 1;
+	SubmitInfo.pSignalSemaphores = signalSemaphores;
+
+	if (vkQueueSubmit(VK_GraphicsQueue, 1, &SubmitInfo, VK_NULL_HANDLE) != VK_SUCCESS) {
+		SetConsoleTextAttribute(HConsole, 12);
+		throw std::runtime_error("ERROR :: Failed to submit the command buffer in the graphics queue");
+		SetConsoleTextAttribute(HConsole, 15); 
 	}
 }
 
@@ -1045,6 +1089,7 @@ void Vulkan_Engine::VRender::Render()
 	while (!glfwWindowShouldClose(VK_Window)) {
 		glfwPollEvents();
 		//glfwWaitEvents();
+		DrawFrame();
 	}
 
 }

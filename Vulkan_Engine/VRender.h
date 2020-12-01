@@ -153,6 +153,12 @@ struct SwapChainSupportDetails
 		//Command Buffers
 		void CreateCommandBuffers();
 
+		//Semaphores
+		void CreateSemaphores();
+
+		//Draw Function
+		void DrawFrame();
+
 		//first steps functions
 		bool GLFWsetter();
 		bool Initiliazer();
@@ -300,6 +306,10 @@ struct SwapChainSupportDetails
 
 		//Clear Values
 		VkClearValue BaseClearColor = { 0.0f,0.0f,0.0f,1.0f };
+
+		//Semaphores
+		VkSemaphore ImageAvailableSemaphore;
+		VkSemaphore RenderFinishedSemaphore;
 
 		//validation layers
 #ifdef NDEBUG
