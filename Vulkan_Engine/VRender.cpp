@@ -20,6 +20,9 @@ Vulkan_Engine::VRender::VRender()
 	CreateRenderPass();
 	CreateGraphicsPipeline();
 	CreateFrameBuffers();
+	CreateCommandPool();
+	CreateCommandBuffers();
+	CreateSemaphores();
 }
 
 Vulkan_Engine::VRender::~VRender()
