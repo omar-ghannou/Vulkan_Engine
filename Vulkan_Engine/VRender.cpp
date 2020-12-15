@@ -665,6 +665,14 @@ VkShaderModule Vulkan_Engine::VRender::CreateShaderModule(const char* ShaderName
 
 void Vulkan_Engine::VRender::CreateRenderPass()
 {
+	//Subpass Dependency
+	SubpassDependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+	SubpassDependency.dstSubpass = 0;
+	SubpassDependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	SubpassDependency.srcAccessMask = 0;
+	SubpassDependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	SubpassDependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
 	//Attachment Description
 	ColorAttachment.format = format.format;
 	ColorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -690,6 +698,8 @@ void Vulkan_Engine::VRender::CreateRenderPass()
 	RenderPassCreateInfo.pAttachments = &ColorAttachment;
 	RenderPassCreateInfo.subpassCount = 1;
 	RenderPassCreateInfo.pSubpasses = &subpass;
+	RenderPassCreateInfo.dependencyCount = 1;
+	RenderPassCreateInfo.pDependencies = &SubpassDependency;
 
 	if (vkCreateRenderPass(LogicalDevice, &RenderPassCreateInfo, nullptr, &RenderPass) != VK_SUCCESS) {
 		SetConsoleTextAttribute(HConsole, 12);

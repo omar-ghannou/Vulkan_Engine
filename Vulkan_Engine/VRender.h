@@ -287,6 +287,8 @@ struct SwapChainSupportDetails
 		//Render Pass -- need to be before VkPipelineLayout in a structure model
 		VkRenderPass RenderPass{};
 		VkRenderPassCreateInfo RenderPassCreateInfo{};
+		//Subpasses Dependencies
+		VkSubpassDependency SubpassDependency{};
 
 		//Graphics Pipeline Object
 		VkPipeline GraphicsPipeline;
