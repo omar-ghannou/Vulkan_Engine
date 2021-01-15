@@ -23,6 +23,7 @@ Vulkan_Engine::VRender::VRender()
 	CreateCommandPool();
 	CreateCommandBuffers();
 	CreateSemaphores();
+
 }
 
 Vulkan_Engine::VRender::~VRender()
@@ -226,6 +227,13 @@ void Vulkan_Engine::VRender::PickPhysicalDevice(VkQueueFlagBits bit)
 			if (isDeviceSuitable(device,bit)) {
 				PhysicalDevice = device;
 				VK_Phy_Device_QueueFamilies = FindQueueFamilies(device);
+				VkPhysicalDeviceMemoryProperties memInfo;
+				vkGetPhysicalDeviceMemoryProperties(device, &memInfo);
+
+				std::cout << std::endl << '\t' << memInfo.memoryHeapCount << std::endl;
+				std::cout << '\t' << memInfo.memoryHeaps->size << std::endl;
+				std::cout << '\t' << memInfo.memoryTypeCount << std::endl;
+				std::cout << '\t' << memInfo.memoryTypes->heapIndex << std::endl;
 
 				SetConsoleTextAttribute(HConsole, 14);
 				std::cout << "\n\nPhysical device extensions : \n\n";
@@ -926,7 +934,7 @@ void Vulkan_Engine::VRender::CreateCommandBuffers()
 	for (auto& commandbuffer : CommandBuffers) {
 		VkCommandBufferBeginInfo BeginInfo{};
 		BeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		BeginInfo.flags = 0;
+		BeginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
 		BeginInfo.pInheritanceInfo = nullptr;
 
 		if (vkBeginCommandBuffer(commandbuffer, &BeginInfo) != VK_SUCCESS) {
@@ -983,9 +991,10 @@ void Vulkan_Engine::VRender::DrawFrame()
 	vkAcquireNextImageKHR(LogicalDevice, VK_SwapChain, UINT64_MAX, ImageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
 
 	VkSubmitInfo SubmitInfo{};
+
 	SubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-	VkSemaphore waitSemaphores[] = {ImageAvailableSemaphore};
+	VkSemaphore waitSemaphores[] = { ImageAvailableSemaphore };
 	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 
 	SubmitInfo.waitSemaphoreCount = 1;
@@ -999,11 +1008,27 @@ void Vulkan_Engine::VRender::DrawFrame()
 	SubmitInfo.signalSemaphoreCount = 1;
 	SubmitInfo.pSignalSemaphores = signalSemaphores;
 
+
 	if (vkQueueSubmit(VK_GraphicsQueue, 1, &SubmitInfo, VK_NULL_HANDLE) != VK_SUCCESS) {
 		SetConsoleTextAttribute(HConsole, 12);
 		throw std::runtime_error("ERROR :: Failed to submit the command buffer in the graphics queue");
-		SetConsoleTextAttribute(HConsole, 15); 
+		SetConsoleTextAttribute(HConsole, 15);
 	}
+
+	PresentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+	PresentInfo.waitSemaphoreCount = 1;
+	PresentInfo.pWaitSemaphores = signalSemaphores;
+
+	VkSwapchainKHR SwapChains[] = { VK_SwapChain };
+	PresentInfo.swapchainCount = 1;
+	PresentInfo.pSwapchains = SwapChains;
+	PresentInfo.pImageIndices = &imageIndex;
+	PresentInfo.pResults = nullptr;
+
+	vkQueuePresentKHR(VK_PresentQueue, &PresentInfo);
+
+	vkQueueWaitIdle(VK_PresentQueue);
+
 }
 
 bool Vulkan_Engine::VRender::GLFWsetter()
@@ -1068,7 +1093,7 @@ void Vulkan_Engine::VRender::CreateInstance()
 	{
 		VK_CreateInfo.enabledLayerCount = static_cast<uint32_t>(VK_ValidationLayers.size());
 		VK_CreateInfo.ppEnabledLayerNames = VK_ValidationLayers.data();
-		VK_CreateInfo.pNext = dynamic_cast<VkDebugUtilsMessengerCreateInfoEXT*>(&VK_Messenger_CreateInfo);
+		VK_CreateInfo.pNext = dynamic_cast<VkDebugUtilsMessengerCreateInfoEXT*>(&VK_Messenger_CreateInfo); //to check for errors before the creation of the instance & the destruction
 	}
 	else 
 	{
@@ -1098,12 +1123,13 @@ void Vulkan_Engine::VRender::Render()
 			return;
 		}
 	}
-
 	while (!glfwWindowShouldClose(VK_Window)) {
 		glfwPollEvents();
 		//glfwWaitEvents();
 		DrawFrame();
 	}
+
+	vkDeviceWaitIdle(LogicalDevice);
 
 }
 

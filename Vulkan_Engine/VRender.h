@@ -164,11 +164,15 @@ struct SwapChainSupportDetails
 		bool Initiliazer();
 		void CreateInstance();
 
-		//data
+		//Instance
 		VkInstance VK_Instance;
+
+		//data
 		GLFWwindow* VK_Window;
 		enum class DEVICE_PICKING_UP_PATTERN { USE_FIRST_SUITABLE_DEVICE, USE_BEST_RATED_SUITABLE_DEVICE };
 		DEVICE_PICKING_UP_PATTERN pattern;
+		const int MAX_FRAMES_IN_FLIGHT = 2;
+
 
 
 		//validation layers debugger messenger
@@ -312,6 +316,10 @@ struct SwapChainSupportDetails
 		//Semaphores
 		VkSemaphore ImageAvailableSemaphore;
 		VkSemaphore RenderFinishedSemaphore;
+
+		//Presentation
+		VkPresentInfoKHR PresentInfo{};
+		
 
 		//validation layers
 #ifdef NDEBUG
