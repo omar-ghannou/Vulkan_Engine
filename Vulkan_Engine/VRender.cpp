@@ -23,13 +23,17 @@ Vulkan_Engine::VRender::VRender()
 	CreateCommandPool();
 	CreateCommandBuffers();
 	CreateSemaphores();
-
+	CreateFences();
 }
 
 Vulkan_Engine::VRender::~VRender()
 {
-	vkDestroySemaphore(LogicalDevice, RenderFinishedSemaphore, nullptr);
-	vkDestroySemaphore(LogicalDevice, ImageAvailableSemaphore, nullptr);
+
+	for (size_t smaphoreIndex = 0; smaphoreIndex < MAX_FRAMES_IN_FLIGHT; smaphoreIndex++) {
+		vkDestroySemaphore(LogicalDevice, RenderFinishedSemaphore[smaphoreIndex], nullptr);
+		vkDestroySemaphore(LogicalDevice, ImageAvailableSemaphore[smaphoreIndex], nullptr);
+		vkDestroyFence(LogicalDevice, inFlightFences[smaphoreIndex], nullptr);
+	}
 	vkDestroyCommandPool(LogicalDevice, CommandPool, nullptr);
 	for (auto& framebuffer : SwapChainFrameBuffers) vkDestroyFramebuffer(LogicalDevice, framebuffer, nullptr);
 	vkDestroyPipeline(LogicalDevice, GraphicsPipeline, nullptr);
@@ -574,23 +578,31 @@ void Vulkan_Engine::VRender::CreateImageView()
 
 void Vulkan_Engine::VRender::LoadCompileShaders()
 {
+	std::string shd[] = { "PrimitiveShader.vert" ,"PrimitiveShader.frag" };
+	std::string shdt[] = { "vert" ,"frag" };
+	int i = 0;
 	char chi = 'n';
 	std::cout << "Do you need to Load the shaders (y/n) : ";
-	std::cin >> chi;
+	//std::cin >> chi;
+	chi = 'y';
 	if (chi == 'y' || chi == 'Y')
 	{
-		while (std::cin.get())
+		while(i < 2)
+		//while (std::cin.get())
 		{
 			std::cout << "\nEnter the name of the shader(with extension), (quit) to quit: ";
 			std::string name;
-			std::cin >> name;
+			//std::cin >> name;
+			name = shd[i];
 			if (name == "quit") break;
 			std::cout << "Enter the type of the shader (vert/frag/tcs/tes/geom/comp) : ";
 			std::string type;
-			std::cin >> type;
+			//std::cin >> type;
+			type = shdt[i];
 			char ch = 'n';
 			std::cout << "Do you need to compile/recompile the shader (y/n) : ";
-			std::cin >> ch;
+			//std::cin >> ch;
+			ch = 'y';
 			if (ch == 'y' || ch == 'Y')
 			{
 				std::string command = "Shaders\\VulkanShaderCompiler.bat ";
@@ -618,7 +630,7 @@ void Vulkan_Engine::VRender::LoadCompileShaders()
 			std::pair<std::vector<char>, std::vector<char>> GLSL_SPIRV_map;
 			std::pair pr = std::pair<std::vector<char>, std::vector<char>>(source[0], source[1]);
 			shaders.insert(std::pair<std::string, std::pair<std::vector<char>, std::vector<char>>>(name, pr));
-
+			i++;
 		}
 
 	}
@@ -974,27 +986,57 @@ void Vulkan_Engine::VRender::CreateCommandBuffers()
 
 void Vulkan_Engine::VRender::CreateSemaphores()
 {
+	ImageAvailableSemaphore.resize(MAX_FRAMES_IN_FLIGHT);
+	RenderFinishedSemaphore.resize(MAX_FRAMES_IN_FLIGHT);
 	VkSemaphoreCreateInfo SemaphoreCreateInfo{};
 	SemaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
-	if (vkCreateSemaphore(LogicalDevice, &SemaphoreCreateInfo, nullptr, &ImageAvailableSemaphore) != VK_SUCCESS
-		|| vkCreateSemaphore(LogicalDevice, &SemaphoreCreateInfo, nullptr, &RenderFinishedSemaphore) != VK_SUCCESS) {
+	for(size_t semaphoreIndex = 0 ; semaphoreIndex < MAX_FRAMES_IN_FLIGHT ; semaphoreIndex++)
+	if (vkCreateSemaphore(LogicalDevice, &SemaphoreCreateInfo, nullptr, &ImageAvailableSemaphore[semaphoreIndex]) != VK_SUCCESS
+		|| vkCreateSemaphore(LogicalDevice, &SemaphoreCreateInfo, nullptr, &RenderFinishedSemaphore[semaphoreIndex]) != VK_SUCCESS) {
 		SetConsoleTextAttribute(HConsole, 12);
 		throw std::runtime_error("ERROR :: Failed to create the Semaphores");
 		SetConsoleTextAttribute(HConsole, 15);
 	}
 }
 
+void Vulkan_Engine::VRender::CreateFences()
+{
+	inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
+	ImagesInFlight.resize(SwapChainImages.size(), VK_NULL_HANDLE);
+	VkFenceCreateInfo FenceCreateInfo{};
+	FenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+	FenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+	for (size_t index = 0; index < MAX_FRAMES_IN_FLIGHT; index++) {
+		if (vkCreateFence(LogicalDevice, &FenceCreateInfo, nullptr, &inFlightFences[index]) != VK_SUCCESS)
+		{
+			SetConsoleTextAttribute(HConsole, 12);
+			throw std::runtime_error("ERROR :: Failed to create the Fences");
+			SetConsoleTextAttribute(HConsole, 15);
+		}
+	}
+
+}
+
 void Vulkan_Engine::VRender::DrawFrame()
 {
+
+	vkWaitForFences(LogicalDevice, 1, &inFlightFences[Current_Frame], VK_TRUE, UINT32_MAX);
+
 	uint32_t imageIndex;
-	vkAcquireNextImageKHR(LogicalDevice, VK_SwapChain, UINT64_MAX, ImageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+	vkAcquireNextImageKHR(LogicalDevice, VK_SwapChain, UINT64_MAX, ImageAvailableSemaphore[Current_Frame], VK_NULL_HANDLE, &imageIndex);
+
+	if (ImagesInFlight[imageIndex] != VK_NULL_HANDLE) {
+		vkWaitForFences(LogicalDevice, 1, &ImagesInFlight[imageIndex], VK_TRUE, UINT64_MAX);
+	}
+
+	ImagesInFlight[imageIndex] = inFlightFences[Current_Frame];
 
 	VkSubmitInfo SubmitInfo{};
 
 	SubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-	VkSemaphore waitSemaphores[] = { ImageAvailableSemaphore };
+	VkSemaphore waitSemaphores[] = { ImageAvailableSemaphore[Current_Frame] };
 	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 
 	SubmitInfo.waitSemaphoreCount = 1;
@@ -1004,12 +1046,13 @@ void Vulkan_Engine::VRender::DrawFrame()
 	SubmitInfo.commandBufferCount = 1;
 	SubmitInfo.pCommandBuffers = &CommandBuffers[imageIndex];
 
-	VkSemaphore signalSemaphores[] = { RenderFinishedSemaphore };
+	VkSemaphore signalSemaphores[] = { RenderFinishedSemaphore[Current_Frame] };
 	SubmitInfo.signalSemaphoreCount = 1;
 	SubmitInfo.pSignalSemaphores = signalSemaphores;
 
+	vkResetFences(LogicalDevice, 1, &inFlightFences[Current_Frame]);
 
-	if (vkQueueSubmit(VK_GraphicsQueue, 1, &SubmitInfo, VK_NULL_HANDLE) != VK_SUCCESS) {
+	if (vkQueueSubmit(VK_GraphicsQueue, 1, &SubmitInfo, inFlightFences[Current_Frame]) != VK_SUCCESS) {
 		SetConsoleTextAttribute(HConsole, 12);
 		throw std::runtime_error("ERROR :: Failed to submit the command buffer in the graphics queue");
 		SetConsoleTextAttribute(HConsole, 15);
@@ -1027,7 +1070,10 @@ void Vulkan_Engine::VRender::DrawFrame()
 
 	vkQueuePresentKHR(VK_PresentQueue, &PresentInfo);
 
-	vkQueueWaitIdle(VK_PresentQueue);
+	//vkQueueWaitIdle(VK_PresentQueue);
+
+	Current_Frame = (Current_Frame + 1) % MAX_FRAMES_IN_FLIGHT;
+
 
 }
 

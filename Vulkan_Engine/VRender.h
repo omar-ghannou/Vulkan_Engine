@@ -33,6 +33,8 @@
 #include <fstream>
 #include <sstream>
 
+#include<time.h>
+
 namespace Vulkan_Engine {
 
 #define TEST_FAILD 0
@@ -156,6 +158,9 @@ struct SwapChainSupportDetails
 		//Semaphores
 		void CreateSemaphores();
 
+		//Fences
+		void CreateFences();
+
 		//Draw Function
 		void DrawFrame();
 
@@ -172,7 +177,7 @@ struct SwapChainSupportDetails
 		enum class DEVICE_PICKING_UP_PATTERN { USE_FIRST_SUITABLE_DEVICE, USE_BEST_RATED_SUITABLE_DEVICE };
 		DEVICE_PICKING_UP_PATTERN pattern;
 		const int MAX_FRAMES_IN_FLIGHT = 2;
-
+		size_t Current_Frame = 0;
 
 
 		//validation layers debugger messenger
@@ -314,8 +319,12 @@ struct SwapChainSupportDetails
 		VkClearValue BaseClearColor = { 0.0f,0.0f,0.0f,1.0f };
 
 		//Semaphores
-		VkSemaphore ImageAvailableSemaphore;
-		VkSemaphore RenderFinishedSemaphore;
+		std::vector<VkSemaphore> ImageAvailableSemaphore;
+		std::vector<VkSemaphore> RenderFinishedSemaphore;
+
+		//fences
+		std::vector<VkFence> inFlightFences;
+		std::vector<VkFence> ImagesInFlight;
 
 		//Presentation
 		VkPresentInfoKHR PresentInfo{};
